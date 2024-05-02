@@ -16,6 +16,7 @@
 package table
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math/bits"
 	"net"
@@ -433,6 +434,58 @@ func (t *Table) tableKey(nlri bgp.AddrPrefixInterface) string {
 		copy(b[8:24], T.Prefix.To16())
 		b[24] = T.Length
 		return *(*string)(unsafe.Pointer(&b))
+	// we need fast lookup to routes for a specific mac address for evpn mac mobility
+	case *bgp.EVPNNLRI:
+		switch U := T.RouteTypeData.(type) {
+		case *bgp.EVPNEthernetAutoDiscoveryRoute:
+			// type (1) + rd (8) + esi (10) + etag (4)
+			b := make([]byte, 1+8+10+4)
+			b[0] = bgp.EVPN_ROUTE_TYPE_ETHERNET_AUTO_DISCOVERY
+			U.RD.EncodeToBytes(b[1:9])
+			copy(b[9:19], U.ESI.Value)
+			binary.BigEndian.PutUint32(b[19:23], U.ETag)
+			return *(*string)(unsafe.Pointer(&b))
+		case *bgp.EVPNMacIPAdvertisementRoute:
+			// type (1) + rd (8) + etag (4) + mac len (1) + mac (n) + ip len (1) + ip
+			b := make([]byte, 1+8+4+1+len(U.MacAddress)+1+len(U.IPAddress))
+			b[0] = bgp.EVPN_ROUTE_TYPE_MAC_IP_ADVERTISEMENT
+			U.RD.EncodeToBytes(b[1:9])
+			binary.BigEndian.PutUint32(b[9:13], U.ETag)
+			b[13] = U.MacAddressLength
+			copy(b[14:], U.MacAddress)
+			i := 14 + uint8(len(U.MacAddress))
+			b[i] = U.IPAddressLength
+			i += 1
+			copy(b[i:], U.IPAddress)
+			return *(*string)(unsafe.Pointer(&b))
+		case *bgp.EVPNMulticastEthernetTagRoute:
+			// type (1) + rd (8) + etag (4) + ip len (1) + ip
+			b := make([]byte, 1+8+4+1+(U.IPAddressLength/8))
+			b[0] = bgp.EVPN_INCLUSIVE_MULTICAST_ETHERNET_TAG
+			U.RD.EncodeToBytes(b[1:9])
+			binary.BigEndian.PutUint32(b[9:13], U.ETag)
+			b[13] = U.IPAddressLength
+			copy(b[14:], U.IPAddress)
+			return *(*string)(unsafe.Pointer(&b))
+		case *bgp.EVPNEthernetSegmentRoute:
+			// type (1) + rd (8) + esi (10) + ip len (1) + ip
+			b := make([]byte, 1+8+10+1+(U.IPAddressLength/8))
+			b[0] = bgp.EVPN_ETHERNET_SEGMENT_ROUTE
+			U.RD.EncodeToBytes(b[1:9])
+			copy(b[9:19], U.ESI.Value)
+			b[19] = U.IPAddressLength
+			copy(b[20:], U.IPAddress)
+			return *(*string)(unsafe.Pointer(&b))
+		case *bgp.EVPNIPPrefixRoute:
+			// type (1) + rd (8) + etag (4) + prefix len (1) + ip
+			b := make([]byte, 1+8+4+1+len(U.IPPrefix))
+			b[0] = bgp.EVPN_IP_PREFIX
+			U.RD.EncodeToBytes(b[1:9])
+			binary.BigEndian.PutUint32(b[9:13], U.ETag)
+			b[13] = U.IPPrefixLength
+			copy(b[14:], U.IPPrefix)
+			return *(*string)(unsafe.Pointer(&b))
+		}
 	}
 	return nlri.String()
 }
