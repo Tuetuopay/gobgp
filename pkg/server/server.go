@@ -2164,8 +2164,12 @@ func (s *BgpServer) fixupApiPath(vrfId string, pathList []*table.Path) error {
 			switch r := nlri.RouteTypeData.(type) {
 			case *bgp.EVPNMacIPAdvertisementRoute:
 				// MAC Mobility Extended Community
-				mac := path.GetNlri().(*bgp.EVPNNLRI).RouteTypeData.(*bgp.EVPNMacIPAdvertisementRoute).MacAddress
-				paths := s.globalRib.GetPathListWithMac(table.GLOBAL_RIB_NAME, 0, []bgp.RouteFamily{bgp.RF_EVPN}, mac)
+				var paths []*table.Path
+				for _, ec := range path.GetExtCommunities() {
+					if t, st := ec.GetTypes(); t <= bgp.EC_TYPE_TRANSITIVE_FOUR_OCTET_AS_SPECIFIC && st == bgp.EC_SUBTYPE_ROUTE_TARGET {
+						paths = append(paths, s.globalRib.GetPathListWithMac(table.GLOBAL_RIB_NAME, 0, []bgp.RouteFamily{bgp.RF_EVPN}, ec, r.MacAddress)...)
+					}
+				}
 				if m := getMacMobilityExtendedCommunity(r.ETag, r.MacAddress, paths); m != nil {
 					pm := getMacMobilityExtendedCommunity(r.ETag, r.MacAddress, []*table.Path{path})
 					if pm == nil {
