@@ -390,10 +390,11 @@ func api2Path(resource api.TableType, path *api.Path, isWithdraw bool) (*table.P
 		return nil, fmt.Errorf("nexthop not found")
 	}
 	rf := bgp.AfiSafiToRouteFamily(uint16(path.Family.Afi), uint8(path.Family.Safi))
-	if resource != api.TableType_VRF && rf == bgp.RF_IPv4_UC && net.ParseIP(nexthop).To4() != nil {
-		pattrs = append(pattrs, bgp.NewPathAttributeNextHop(nexthop))
+	nh := net.ParseIP(nexthop)
+	if resource != api.TableType_VRF && rf == bgp.RF_IPv4_UC && nh.To4() != nil {
+		pattrs = append(pattrs, bgp.NewPathAttributeNextHop(nh))
 	} else {
-		pattrs = append(pattrs, bgp.NewPathAttributeMpReachNLRI(nexthop, []bgp.AddrPrefixInterface{nlri}))
+		pattrs = append(pattrs, bgp.NewPathAttributeMpReachNLRI(nh, []bgp.AddrPrefixInterface{nlri}))
 	}
 
 	doWithdraw := (isWithdraw || path.IsWithdraw)

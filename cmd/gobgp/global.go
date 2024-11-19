@@ -136,11 +136,11 @@ func redirectParser(args []string) ([]bgp.ExtendedCommunityInterface, error) {
 	case *bgp.TwoOctetAsSpecificExtended:
 		return []bgp.ExtendedCommunityInterface{bgp.NewRedirectTwoOctetAsSpecificExtended(r.AS, r.LocalAdmin)}, nil
 	case *bgp.IPv4AddressSpecificExtended:
-		return []bgp.ExtendedCommunityInterface{bgp.NewRedirectIPv4AddressSpecificExtended(r.IPv4.String(), r.LocalAdmin)}, nil
+		return []bgp.ExtendedCommunityInterface{bgp.NewRedirectIPv4AddressSpecificExtended(r.IPv4, r.LocalAdmin)}, nil
 	case *bgp.FourOctetAsSpecificExtended:
 		return []bgp.ExtendedCommunityInterface{bgp.NewRedirectFourOctetAsSpecificExtended(r.AS, r.LocalAdmin)}, nil
 	case *bgp.IPv6AddressSpecificExtended:
-		return []bgp.ExtendedCommunityInterface{bgp.NewRedirectIPv6AddressSpecificExtended(r.IPv6.String(), r.LocalAdmin)}, nil
+		return []bgp.ExtendedCommunityInterface{bgp.NewRedirectIPv6AddressSpecificExtended(r.IPv6, r.LocalAdmin)}, nil
 	}
 	return nil, fmt.Errorf("invalid redirect")
 }
@@ -1791,7 +1791,7 @@ func extractAggregator(args []string) ([]string, bgp.PathAttributeInterface, err
 			if err != nil {
 				return nil, nil, fmt.Errorf("invalid aggregator format")
 			}
-			attr := bgp.NewPathAttributeAggregator(uint32(as), net.ParseIP(v[1]).String())
+			attr := bgp.NewPathAttributeAggregator(uint32(as), net.ParseIP(v[1]))
 			return append(args[:idx], args[idx+2:]...), attr, nil
 		}
 	}
@@ -1848,12 +1848,12 @@ func parsePath(rf bgp.RouteFamily, args []string) (*api.Path, error) {
 			if ip.To4() == nil {
 				return nil, fmt.Errorf("invalid ipv4 prefix")
 			}
-			nlri = bgp.NewIPAddrPrefix(uint8(ones), ip.String())
+			nlri = bgp.NewIPAddrPrefix(uint8(ones), ip)
 		} else {
 			if ip.To16() == nil {
 				return nil, fmt.Errorf("invalid ipv6 prefix")
 			}
-			nlri = bgp.NewIPv6AddrPrefix(uint8(ones), ip.String())
+			nlri = bgp.NewIPv6AddrPrefix(uint8(ones), ip)
 		}
 
 		if len(args) > 2 && args[1] == "identifier" {
@@ -1892,12 +1892,12 @@ func parsePath(rf bgp.RouteFamily, args []string) (*api.Path, error) {
 			if ip.To4() == nil {
 				return nil, fmt.Errorf("invalid ipv4 prefix")
 			}
-			nlri = bgp.NewLabeledVPNIPAddrPrefix(uint8(ones), ip.String(), *mpls, rd)
+			nlri = bgp.NewLabeledVPNIPAddrPrefix(uint8(ones), ip, *mpls, rd)
 		} else {
 			if ip.To16() == nil {
 				return nil, fmt.Errorf("invalid ipv6 prefix")
 			}
-			nlri = bgp.NewLabeledVPNIPv6AddrPrefix(uint8(ones), ip.String(), *mpls, rd)
+			nlri = bgp.NewLabeledVPNIPv6AddrPrefix(uint8(ones), ip, *mpls, rd)
 		}
 
 		args = args[5:]
@@ -1934,12 +1934,12 @@ func parsePath(rf bgp.RouteFamily, args []string) (*api.Path, error) {
 			if ip.To4() == nil {
 				return nil, fmt.Errorf("invalid ipv4 prefix")
 			}
-			nlri = bgp.NewLabeledIPAddrPrefix(uint8(ones), ip.String(), *mpls)
+			nlri = bgp.NewLabeledIPAddrPrefix(uint8(ones), ip, *mpls)
 		} else {
 			if ip.To4() != nil {
 				return nil, fmt.Errorf("invalid ipv6 prefix")
 			}
-			nlri = bgp.NewLabeledIPv6AddrPrefix(uint8(ones), ip.String(), *mpls)
+			nlri = bgp.NewLabeledIPv6AddrPrefix(uint8(ones), ip, *mpls)
 		}
 	case bgp.RF_EVPN:
 		nlri, extcomms, err = parseEvpnArgs(args)
@@ -1976,10 +1976,11 @@ func parsePath(rf bgp.RouteFamily, args []string) (*api.Path, error) {
 		attrs = append(attrs, ls)
 	}
 
-	if rf == bgp.RF_IPv4_UC && net.ParseIP(nexthop).To4() != nil {
-		attrs = append(attrs, bgp.NewPathAttributeNextHop(nexthop))
+	nh := net.ParseIP(nexthop)
+	if rf == bgp.RF_IPv4_UC && nh.To4() != nil {
+		attrs = append(attrs, bgp.NewPathAttributeNextHop(nh))
 	} else {
-		mpreach := bgp.NewPathAttributeMpReachNLRI(nexthop, []bgp.AddrPrefixInterface{nlri})
+		mpreach := bgp.NewPathAttributeMpReachNLRI(nh, []bgp.AddrPrefixInterface{nlri})
 		attrs = append(attrs, mpreach)
 	}
 

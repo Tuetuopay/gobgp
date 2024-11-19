@@ -50,7 +50,7 @@ func UnmarshalAttribute(an *apb.Any) (bgp.PathAttributeInterface, error) {
 				return nil, fmt.Errorf("invalid nexthop address: %s", a.NextHop)
 			}
 		}
-		return bgp.NewPathAttributeNextHop(a.NextHop), nil
+		return bgp.NewPathAttributeNextHop(nexthop), nil
 	case *api.MultiExitDiscAttribute:
 		return bgp.NewPathAttributeMultiExitDisc(a.Med), nil
 	case *api.LocalPrefAttribute:
@@ -58,24 +58,26 @@ func UnmarshalAttribute(an *apb.Any) (bgp.PathAttributeInterface, error) {
 	case *api.AtomicAggregateAttribute:
 		return bgp.NewPathAttributeAtomicAggregate(), nil
 	case *api.AggregatorAttribute:
-		if net.ParseIP(a.Address).To4() == nil {
+		address := net.ParseIP(a.Address).To4()
+		if address.To4() == nil {
 			return nil, fmt.Errorf("invalid aggregator address: %s", a.Address)
 		}
-		return bgp.NewPathAttributeAggregator(a.Asn, a.Address), nil
+		return bgp.NewPathAttributeAggregator(a.Asn, address), nil
 	case *api.CommunitiesAttribute:
 		return bgp.NewPathAttributeCommunities(a.Communities), nil
 	case *api.OriginatorIdAttribute:
-		if net.ParseIP(a.Id).To4() == nil {
+		id := net.ParseIP(a.Id).To4()
+		if id.To4() == nil {
 			return nil, fmt.Errorf("invalid originator id: %s", a.Id)
 		}
-		return bgp.NewPathAttributeOriginatorId(a.Id), nil
+		return bgp.NewPathAttributeOriginatorId(id), nil
 	case *api.ClusterListAttribute:
 		for _, id := range a.Ids {
 			if net.ParseIP(id).To4() == nil {
 				return nil, fmt.Errorf("invalid cluster list: %s", a.Ids)
 			}
 		}
-		return bgp.NewPathAttributeClusterList(a.Ids), nil
+		return bgp.ParsePathAttributeClusterList(a.Ids), nil
 	case *api.MpReachNLRIAttribute:
 		if a.Family == nil {
 			return nil, fmt.Errorf("empty family")
@@ -105,7 +107,7 @@ func UnmarshalAttribute(an *apb.Any) (bgp.PathAttributeInterface, error) {
 				return nil, fmt.Errorf("invalid nexthop: %s", nexthop)
 			}
 		}
-		attr := bgp.NewPathAttributeMpReachNLRI(nexthop, nlris)
+		attr := bgp.ParsePathAttributeMpReachNLRI(nexthop, nlris)
 		attr.LinkLocalNexthop = linkLocalNexthop
 		return attr, nil
 	case *api.MpUnreachNLRIAttribute:
@@ -124,10 +126,11 @@ func UnmarshalAttribute(an *apb.Any) (bgp.PathAttributeInterface, error) {
 		}
 		return bgp.NewPathAttributeAs4Path(params), nil
 	case *api.As4AggregatorAttribute:
-		if net.ParseIP(a.Address).To4() == nil {
+		address := net.ParseIP(a.Address).To4()
+		if address == nil {
 			return nil, fmt.Errorf("invalid as4 aggregator address: %s", a.Address)
 		}
-		return bgp.NewPathAttributeAs4Aggregator(a.Asn, a.Address), nil
+		return bgp.NewPathAttributeAs4Aggregator(a.Asn, address), nil
 	case *api.PmsiTunnelAttribute:
 		typ := bgp.PmsiTunnelType(a.Type)
 		var isLeafInfoRequired bool
@@ -141,7 +144,7 @@ func UnmarshalAttribute(an *apb.Any) (bgp.PathAttributeInterface, error) {
 			if ip.To4() == nil && ip.To16() == nil {
 				return nil, fmt.Errorf("invalid pmsi tunnel identifier: %s", a.Id)
 			}
-			id = bgp.NewIngressReplTunnelID(ip.String())
+			id = bgp.NewIngressReplTunnelID(ip)
 		default:
 			id = bgp.NewDefaultPmsiTunnelID(a.Id)
 		}
@@ -164,7 +167,7 @@ func UnmarshalAttribute(an *apb.Any) (bgp.PathAttributeInterface, error) {
 				case *api.TunnelEncapSubTLVColor:
 					subTlv = bgp.NewTunnelEncapSubTLVColor(sv.Color)
 				case *api.TunnelEncapSubTLVEgressEndpoint:
-					subTlv = bgp.NewTunnelEncapSubTLVEgressEndpoint(sv.Address)
+					subTlv = bgp.ParseTunnelEncapSubTLVEgressEndpoint(sv.Address)
 				case *api.TunnelEncapSubTLVUDPDestPort:
 					subTlv = bgp.NewTunnelEncapSubTLVUDPDestPort(uint16(sv.Port))
 				case *api.TunnelEncapSubTLVSRPreference:
@@ -235,9 +238,9 @@ func UnmarshalAttribute(an *apb.Any) (bgp.PathAttributeInterface, error) {
 			}
 			switch v := value.(type) {
 			case *api.IPv6AddressSpecificExtended:
-				community = bgp.NewIPv6AddressSpecificExtended(bgp.ExtendedCommunityAttrSubType(v.SubType), v.Address, uint16(v.LocalAdmin), v.IsTransitive)
+				community = bgp.ParseIPv6AddressSpecificExtended(bgp.ExtendedCommunityAttrSubType(v.SubType), v.Address, uint16(v.LocalAdmin), v.IsTransitive)
 			case *api.RedirectIPv6AddressSpecificExtended:
-				community = bgp.NewRedirectIPv6AddressSpecificExtended(v.Address, uint16(v.LocalAdmin))
+				community = bgp.ParseRedirectIPv6AddressSpecificExtended(v.Address, uint16(v.LocalAdmin))
 			}
 			if community == nil {
 				return nil, fmt.Errorf("invalid ipv6 extended community: %v", value)
@@ -530,7 +533,7 @@ func UnmarshalRD(a *apb.Any) (bgp.RouteDistinguisherInterface, error) {
 	case *api.RouteDistinguisherTwoOctetASN:
 		return bgp.NewRouteDistinguisherTwoOctetAS(uint16(v.Admin), v.Assigned), nil
 	case *api.RouteDistinguisherIPAddress:
-		rd := bgp.NewRouteDistinguisherIPAddressAS(v.Admin, uint16(v.Assigned))
+		rd := bgp.ParseRouteDistinguisherIPAddressAS(v.Admin, uint16(v.Assigned))
 		if rd == nil {
 			return nil, fmt.Errorf("invalid address for route distinguisher: %s", v.Admin)
 		}
@@ -629,13 +632,13 @@ func UnmarshalFlowSpecRules(values []*apb.Any) ([]bgp.FlowSpecComponentInterface
 			isIPv4 := net.ParseIP(v.Prefix).To4() != nil
 			switch {
 			case typ == bgp.FLOW_SPEC_TYPE_DST_PREFIX && isIPv4:
-				rule = bgp.NewFlowSpecDestinationPrefix(bgp.NewIPAddrPrefix(uint8(v.PrefixLen), v.Prefix))
+				rule = bgp.NewFlowSpecDestinationPrefix(bgp.ParseIPAddrPrefix(uint8(v.PrefixLen), v.Prefix))
 			case typ == bgp.FLOW_SPEC_TYPE_SRC_PREFIX && isIPv4:
-				rule = bgp.NewFlowSpecSourcePrefix(bgp.NewIPAddrPrefix(uint8(v.PrefixLen), v.Prefix))
+				rule = bgp.NewFlowSpecSourcePrefix(bgp.ParseIPAddrPrefix(uint8(v.PrefixLen), v.Prefix))
 			case typ == bgp.FLOW_SPEC_TYPE_DST_PREFIX && !isIPv4:
-				rule = bgp.NewFlowSpecDestinationPrefix6(bgp.NewIPv6AddrPrefix(uint8(v.PrefixLen), v.Prefix), uint8(v.Offset))
+				rule = bgp.NewFlowSpecDestinationPrefix6(bgp.ParseIPv6AddrPrefix(uint8(v.PrefixLen), v.Prefix), uint8(v.Offset))
 			case typ == bgp.FLOW_SPEC_TYPE_SRC_PREFIX && !isIPv4:
-				rule = bgp.NewFlowSpecSourcePrefix6(bgp.NewIPv6AddrPrefix(uint8(v.PrefixLen), v.Prefix), uint8(v.Offset))
+				rule = bgp.NewFlowSpecSourcePrefix6(bgp.ParseIPv6AddrPrefix(uint8(v.PrefixLen), v.Prefix), uint8(v.Offset))
 			}
 		case *api.FlowSpecMAC:
 			typ := bgp.BGPFlowSpecType(v.Type)
@@ -1411,23 +1414,23 @@ func UnmarshalNLRI(rf bgp.RouteFamily, an *apb.Any) (bgp.AddrPrefixInterface, er
 	case *api.IPAddressPrefix:
 		switch rf {
 		case bgp.RF_IPv4_UC:
-			nlri = bgp.NewIPAddrPrefix(uint8(v.PrefixLen), v.Prefix)
+			nlri = bgp.ParseIPAddrPrefix(uint8(v.PrefixLen), v.Prefix)
 		case bgp.RF_IPv6_UC:
-			nlri = bgp.NewIPv6AddrPrefix(uint8(v.PrefixLen), v.Prefix)
+			nlri = bgp.ParseIPv6AddrPrefix(uint8(v.PrefixLen), v.Prefix)
 		}
 	case *api.LabeledIPAddressPrefix:
 		switch rf {
 		case bgp.RF_IPv4_MPLS:
-			nlri = bgp.NewLabeledIPAddrPrefix(uint8(v.PrefixLen), v.Prefix, *bgp.NewMPLSLabelStack(v.Labels...))
+			nlri = bgp.ParseLabeledIPAddrPrefix(uint8(v.PrefixLen), v.Prefix, *bgp.NewMPLSLabelStack(v.Labels...))
 		case bgp.RF_IPv6_MPLS:
-			nlri = bgp.NewLabeledIPv6AddrPrefix(uint8(v.PrefixLen), v.Prefix, *bgp.NewMPLSLabelStack(v.Labels...))
+			nlri = bgp.ParseLabeledIPv6AddrPrefix(uint8(v.PrefixLen), v.Prefix, *bgp.NewMPLSLabelStack(v.Labels...))
 		}
 	case *api.EncapsulationNLRI:
 		switch rf {
 		case bgp.RF_IPv4_ENCAP:
-			nlri = bgp.NewEncapNLRI(v.Address)
+			nlri = bgp.ParseEncapNLRI(v.Address)
 		case bgp.RF_IPv6_ENCAP:
-			nlri = bgp.NewEncapv6NLRI(v.Address)
+			nlri = bgp.ParseEncapv6NLRI(v.Address)
 		}
 	case *api.VPLSNLRI:
 		if rf == bgp.RF_VPLS {
@@ -1464,7 +1467,7 @@ func UnmarshalNLRI(rf bgp.RouteFamily, an *apb.Any) (bgp.AddrPrefixInterface, er
 			if err != nil {
 				return nil, err
 			}
-			nlri = bgp.NewEVPNMacIPAdvertisementRoute(rd, *esi, v.EthernetTag, v.MacAddress, v.IpAddress, v.Labels)
+			nlri = bgp.ParseEVPNMacIPAdvertisementRoute(rd, *esi, v.EthernetTag, v.MacAddress, v.IpAddress, v.Labels)
 		}
 	case *api.EVPNInclusiveMulticastEthernetTagRoute:
 		if rf == bgp.RF_EVPN {
@@ -1472,7 +1475,7 @@ func UnmarshalNLRI(rf bgp.RouteFamily, an *apb.Any) (bgp.AddrPrefixInterface, er
 			if err != nil {
 				return nil, err
 			}
-			nlri = bgp.NewEVPNMulticastEthernetTagRoute(rd, v.EthernetTag, v.IpAddress)
+			nlri = bgp.ParseEVPNMulticastEthernetTagRoute(rd, v.EthernetTag, v.IpAddress)
 		}
 	case *api.EVPNEthernetSegmentRoute:
 		if rf == bgp.RF_EVPN {
@@ -1484,7 +1487,7 @@ func UnmarshalNLRI(rf bgp.RouteFamily, an *apb.Any) (bgp.AddrPrefixInterface, er
 			if err != nil {
 				return nil, err
 			}
-			nlri = bgp.NewEVPNEthernetSegmentRoute(rd, *esi, v.IpAddress)
+			nlri = bgp.ParseEVPNEthernetSegmentRoute(rd, *esi, v.IpAddress)
 		}
 	case *api.EVPNIPPrefixRoute:
 		if rf == bgp.RF_EVPN {
@@ -1496,7 +1499,7 @@ func UnmarshalNLRI(rf bgp.RouteFamily, an *apb.Any) (bgp.AddrPrefixInterface, er
 			if err != nil {
 				return nil, err
 			}
-			nlri = bgp.NewEVPNIPPrefixRoute(rd, *esi, v.EthernetTag, uint8(v.IpPrefixLen), v.IpPrefix, v.GwAddress, v.Label)
+			nlri = bgp.ParseEVPNIPPrefixRoute(rd, *esi, v.EthernetTag, uint8(v.IpPrefixLen), v.IpPrefix, v.GwAddress, v.Label)
 		}
 	case *api.SRPolicyNLRI:
 		switch rf {
@@ -1512,9 +1515,9 @@ func UnmarshalNLRI(rf bgp.RouteFamily, an *apb.Any) (bgp.AddrPrefixInterface, er
 		}
 		switch rf {
 		case bgp.RF_IPv4_VPN:
-			nlri = bgp.NewLabeledVPNIPAddrPrefix(uint8(v.PrefixLen), v.Prefix, *bgp.NewMPLSLabelStack(v.Labels...), rd)
+			nlri = bgp.ParseLabeledVPNIPAddrPrefix(uint8(v.PrefixLen), v.Prefix, *bgp.NewMPLSLabelStack(v.Labels...), rd)
 		case bgp.RF_IPv6_VPN:
-			nlri = bgp.NewLabeledVPNIPv6AddrPrefix(uint8(v.PrefixLen), v.Prefix, *bgp.NewMPLSLabelStack(v.Labels...), rd)
+			nlri = bgp.ParseLabeledVPNIPv6AddrPrefix(uint8(v.PrefixLen), v.Prefix, *bgp.NewMPLSLabelStack(v.Labels...), rd)
 		}
 	case *api.RouteTargetMembershipNLRI:
 		rt, err := UnmarshalRT(v.Rt)
@@ -1834,7 +1837,7 @@ func UnmarshalRT(a *apb.Any) (bgp.ExtendedCommunityInterface, error) {
 	case *api.TwoOctetAsSpecificExtended:
 		return bgp.NewTwoOctetAsSpecificExtended(bgp.ExtendedCommunityAttrSubType(v.SubType), uint16(v.Asn), v.LocalAdmin, v.IsTransitive), nil
 	case *api.IPv4AddressSpecificExtended:
-		rt := bgp.NewIPv4AddressSpecificExtended(bgp.ExtendedCommunityAttrSubType(v.SubType), v.Address, uint16(v.LocalAdmin), v.IsTransitive)
+		rt := bgp.ParseIPv4AddressSpecificExtended(bgp.ExtendedCommunityAttrSubType(v.SubType), v.Address, uint16(v.LocalAdmin), v.IsTransitive)
 		if rt == nil {
 			return nil, fmt.Errorf("invalid address for ipv4 address specific route target: %s", v.Address)
 		}
@@ -1993,7 +1996,7 @@ func unmarshalExComm(a *api.ExtendedCommunitiesAttribute) (*bgp.PathAttributeExt
 		case *api.TwoOctetAsSpecificExtended:
 			community = bgp.NewTwoOctetAsSpecificExtended(bgp.ExtendedCommunityAttrSubType(v.SubType), uint16(v.Asn), v.LocalAdmin, v.IsTransitive)
 		case *api.IPv4AddressSpecificExtended:
-			community = bgp.NewIPv4AddressSpecificExtended(bgp.ExtendedCommunityAttrSubType(v.SubType), v.Address, uint16(v.LocalAdmin), v.IsTransitive)
+			community = bgp.ParseIPv4AddressSpecificExtended(bgp.ExtendedCommunityAttrSubType(v.SubType), v.Address, uint16(v.LocalAdmin), v.IsTransitive)
 		case *api.FourOctetAsSpecificExtended:
 			community = bgp.NewFourOctetAsSpecificExtended(bgp.ExtendedCommunityAttrSubType(v.SubType), v.Asn, uint16(v.LocalAdmin), v.IsTransitive)
 		case *api.ValidationExtended:
@@ -2011,11 +2014,11 @@ func unmarshalExComm(a *api.ExtendedCommunitiesAttribute) (*bgp.PathAttributeExt
 		case *api.ESILabelExtended:
 			community = bgp.NewESILabelExtended(v.Label, v.IsSingleActive)
 		case *api.ESImportRouteTarget:
-			community = bgp.NewESImportRouteTarget(v.EsImport)
+			community = bgp.ParseESImportRouteTarget(v.EsImport)
 		case *api.MacMobilityExtended:
 			community = bgp.NewMacMobilityExtended(v.SequenceNum, v.IsSticky)
 		case *api.RouterMacExtended:
-			community = bgp.NewRoutersMacExtended(v.Mac)
+			community = bgp.ParseRoutersMacExtended(v.Mac)
 		case *api.TrafficRateExtended:
 			community = bgp.NewTrafficRateExtended(uint16(v.Asn), v.Rate)
 		case *api.TrafficActionExtended:
@@ -2023,7 +2026,7 @@ func unmarshalExComm(a *api.ExtendedCommunitiesAttribute) (*bgp.PathAttributeExt
 		case *api.RedirectTwoOctetAsSpecificExtended:
 			community = bgp.NewRedirectTwoOctetAsSpecificExtended(uint16(v.Asn), v.LocalAdmin)
 		case *api.RedirectIPv4AddressSpecificExtended:
-			community = bgp.NewRedirectIPv4AddressSpecificExtended(v.Address, uint16(v.LocalAdmin))
+			community = bgp.ParseRedirectIPv4AddressSpecificExtended(v.Address, uint16(v.LocalAdmin))
 		case *api.RedirectFourOctetAsSpecificExtended:
 			community = bgp.NewRedirectFourOctetAsSpecificExtended(v.Asn, uint16(v.LocalAdmin))
 		case *api.TrafficRemarkExtended:

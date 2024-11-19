@@ -27,13 +27,13 @@ import (
 func TestLookupLonger(t *testing.T) {
 	tbl := NewTable(logger, bgp.RF_IPv4_UC)
 
-	tbl.setDestination(NewDestination(bgp.NewIPAddrPrefix(23, "11.0.0.0"), 0))
-	tbl.setDestination(NewDestination(bgp.NewIPAddrPrefix(24, "11.0.0.0"), 0))
-	tbl.setDestination(NewDestination(bgp.NewIPAddrPrefix(32, "11.0.0.4"), 0))
-	tbl.setDestination(NewDestination(bgp.NewIPAddrPrefix(32, "11.0.0.129"), 0))
-	tbl.setDestination(NewDestination(bgp.NewIPAddrPrefix(28, "11.0.0.144"), 0))
-	tbl.setDestination(NewDestination(bgp.NewIPAddrPrefix(29, "11.0.0.144"), 0))
-	tbl.setDestination(NewDestination(bgp.NewIPAddrPrefix(32, "11.0.0.145"), 0))
+	tbl.setDestination(NewDestination(bgp.ParseIPAddrPrefix(23, "11.0.0.0"), 0))
+	tbl.setDestination(NewDestination(bgp.ParseIPAddrPrefix(24, "11.0.0.0"), 0))
+	tbl.setDestination(NewDestination(bgp.ParseIPAddrPrefix(32, "11.0.0.4"), 0))
+	tbl.setDestination(NewDestination(bgp.ParseIPAddrPrefix(32, "11.0.0.129"), 0))
+	tbl.setDestination(NewDestination(bgp.ParseIPAddrPrefix(28, "11.0.0.144"), 0))
+	tbl.setDestination(NewDestination(bgp.ParseIPAddrPrefix(29, "11.0.0.144"), 0))
+	tbl.setDestination(NewDestination(bgp.ParseIPAddrPrefix(32, "11.0.0.145"), 0))
 
 	r, _ := tbl.GetLongerPrefixDestinations("11.0.0.128/25")
 	assert.Equal(t, len(r), 4)
@@ -421,7 +421,7 @@ func updateMsgT1() *bgp.BGPMessage {
 	origin := bgp.NewPathAttributeOrigin(0)
 	aspathParam := []bgp.AsPathParamInterface{bgp.NewAsPathParam(2, []uint16{65000})}
 	aspath := bgp.NewPathAttributeAsPath(aspathParam)
-	nexthop := bgp.NewPathAttributeNextHop("192.168.50.1")
+	nexthop := bgp.ParsePathAttributeNextHop("192.168.50.1")
 	med := bgp.NewPathAttributeMultiExitDisc(0)
 
 	pathAttributes := []bgp.PathAttributeInterface{
@@ -431,7 +431,7 @@ func updateMsgT1() *bgp.BGPMessage {
 		med,
 	}
 
-	nlri := []*bgp.IPAddrPrefix{bgp.NewIPAddrPrefix(24, "10.10.10.0")}
+	nlri := []*bgp.IPAddrPrefix{bgp.ParseIPAddrPrefix(24, "10.10.10.0")}
 	return bgp.NewBGPUpdateMessage(nil, pathAttributes, nlri)
 }
 
@@ -440,7 +440,7 @@ func updateMsgT2() *bgp.BGPMessage {
 	origin := bgp.NewPathAttributeOrigin(0)
 	aspathParam := []bgp.AsPathParamInterface{bgp.NewAsPathParam(2, []uint16{65100})}
 	aspath := bgp.NewPathAttributeAsPath(aspathParam)
-	nexthop := bgp.NewPathAttributeNextHop("192.168.100.1")
+	nexthop := bgp.ParsePathAttributeNextHop("192.168.100.1")
 	med := bgp.NewPathAttributeMultiExitDisc(100)
 
 	pathAttributes := []bgp.PathAttributeInterface{
@@ -450,7 +450,7 @@ func updateMsgT2() *bgp.BGPMessage {
 		med,
 	}
 
-	nlri := []*bgp.IPAddrPrefix{bgp.NewIPAddrPrefix(24, "20.20.20.0")}
+	nlri := []*bgp.IPAddrPrefix{bgp.ParseIPAddrPrefix(24, "20.20.20.0")}
 	return bgp.NewBGPUpdateMessage(nil, pathAttributes, nlri)
 }
 
@@ -458,7 +458,7 @@ func updateMsgT3() *bgp.BGPMessage {
 	origin := bgp.NewPathAttributeOrigin(0)
 	aspathParam := []bgp.AsPathParamInterface{bgp.NewAsPathParam(2, []uint16{65100})}
 	aspath := bgp.NewPathAttributeAsPath(aspathParam)
-	nexthop := bgp.NewPathAttributeNextHop("192.168.150.1")
+	nexthop := bgp.ParsePathAttributeNextHop("192.168.150.1")
 	med := bgp.NewPathAttributeMultiExitDisc(100)
 
 	pathAttributes := []bgp.PathAttributeInterface{
@@ -468,8 +468,8 @@ func updateMsgT3() *bgp.BGPMessage {
 		med,
 	}
 
-	nlri := []*bgp.IPAddrPrefix{bgp.NewIPAddrPrefix(24, "30.30.30.0")}
-	w1 := bgp.NewIPAddrPrefix(23, "40.40.40.0")
+	nlri := []*bgp.IPAddrPrefix{bgp.ParseIPAddrPrefix(24, "30.30.30.0")}
+	w1 := bgp.ParseIPAddrPrefix(23, "40.40.40.0")
 	withdrawnRoutes := []*bgp.IPAddrPrefix{w1}
 	return bgp.NewBGPUpdateMessage(withdrawnRoutes, pathAttributes, nlri)
 }

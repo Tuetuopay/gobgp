@@ -43,9 +43,9 @@ func validateOne(rt *ROATable, cidr, aspathStr string) oc.RpkiValidationResultTy
 	ip, r, _ := net.ParseCIDR(cidr)
 	length, _ := r.Mask.Size()
 	if ip.To4() == nil {
-		nlri = bgp.NewIPv6AddrPrefix(uint8(length), ip.String())
+		nlri = bgp.NewIPv6AddrPrefix(uint8(length), ip)
 	} else {
-		nlri = bgp.NewIPAddrPrefix(uint8(length), ip.String())
+		nlri = bgp.NewIPAddrPrefix(uint8(length), ip)
 	}
 	attrs := []bgp.PathAttributeInterface{strToASParam(aspathStr)}
 	path := NewPath(&PeerInfo{LocalAS: 65500}, nlri, false, attrs, time.Now(), false)

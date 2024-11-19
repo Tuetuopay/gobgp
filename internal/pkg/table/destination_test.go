@@ -54,14 +54,14 @@ func TestDestinationGetRouteFamily(t *testing.T) {
 }
 func TestDestinationSetNlri(t *testing.T) {
 	dd := &Destination{}
-	nlri := bgp.NewIPAddrPrefix(24, "13.2.3.1")
+	nlri := bgp.ParseIPAddrPrefix(24, "13.2.3.1")
 	dd.setNlri(nlri)
 	r_nlri := dd.GetNlri()
 	assert.Equal(t, r_nlri, nlri)
 }
 func TestDestinationGetNlri(t *testing.T) {
 	dd := &Destination{}
-	nlri := bgp.NewIPAddrPrefix(24, "10.110.123.1")
+	nlri := bgp.ParseIPAddrPrefix(24, "10.110.123.1")
 	dd.setNlri(nlri)
 	r_nlri := dd.GetNlri()
 	assert.Equal(t, r_nlri, nlri)
@@ -72,10 +72,10 @@ func TestCalculate2(t *testing.T) {
 	origin := bgp.NewPathAttributeOrigin(0)
 	aspathParam := []bgp.AsPathParamInterface{bgp.NewAs4PathParam(2, []uint32{65001})}
 	aspath := bgp.NewPathAttributeAsPath(aspathParam)
-	nexthop := bgp.NewPathAttributeNextHop("10.0.0.1")
+	nexthop := bgp.ParsePathAttributeNextHop("10.0.0.1")
 	med := bgp.NewPathAttributeMultiExitDisc(0)
 	pathAttributes := []bgp.PathAttributeInterface{origin, aspath, nexthop, med}
-	nlri := bgp.NewIPAddrPrefix(24, "10.10.0.0")
+	nlri := bgp.ParseIPAddrPrefix(24, "10.10.0.0")
 
 	// peer1 sends normal update message 10.10.0.0/24
 	update1 := bgp.NewBGPUpdateMessage(nil, pathAttributes, []*bgp.IPAddrPrefix{nlri})
@@ -119,7 +119,7 @@ func TestCalculate2(t *testing.T) {
 }
 
 func TestNeighAddrTieBreak(t *testing.T) {
-	nlri := bgp.NewIPAddrPrefix(24, "10.10.0.0")
+	nlri := bgp.ParseIPAddrPrefix(24, "10.10.0.0")
 
 	peer0 := &PeerInfo{AS: 65001, LocalAS: 1, Address: net.IP{2, 2, 2, 2}, ID: net.IP{2, 2, 2, 2}}
 
@@ -141,7 +141,7 @@ func TestNeighAddrTieBreak(t *testing.T) {
 }
 
 func TestMedTieBreaker(t *testing.T) {
-	nlri := bgp.NewIPAddrPrefix(24, "10.10.0.0")
+	nlri := bgp.ParseIPAddrPrefix(24, "10.10.0.0")
 
 	p0 := func() *Path {
 		aspath := bgp.NewPathAttributeAsPath([]bgp.AsPathParamInterface{bgp.NewAs4PathParam(bgp.BGP_ASPATH_ATTR_TYPE_SEQ, []uint32{65001, 65002}), bgp.NewAs4PathParam(bgp.BGP_ASPATH_ATTR_TYPE_SEQ, []uint32{65003, 65004})})
@@ -200,10 +200,10 @@ func TestTimeTieBreaker(t *testing.T) {
 	origin := bgp.NewPathAttributeOrigin(0)
 	aspathParam := []bgp.AsPathParamInterface{bgp.NewAs4PathParam(2, []uint32{65001})}
 	aspath := bgp.NewPathAttributeAsPath(aspathParam)
-	nexthop := bgp.NewPathAttributeNextHop("10.0.0.1")
+	nexthop := bgp.ParsePathAttributeNextHop("10.0.0.1")
 	med := bgp.NewPathAttributeMultiExitDisc(0)
 	pathAttributes := []bgp.PathAttributeInterface{origin, aspath, nexthop, med}
-	nlri := bgp.NewIPAddrPrefix(24, "10.10.0.0")
+	nlri := bgp.ParseIPAddrPrefix(24, "10.10.0.0")
 	updateMsg := bgp.NewBGPUpdateMessage(nil, pathAttributes, []*bgp.IPAddrPrefix{nlri})
 	peer1 := &PeerInfo{AS: 2, LocalAS: 1, Address: net.IP{1, 1, 1, 1}, ID: net.IP{1, 1, 1, 1}}
 	path1 := ProcessMessage(updateMsg, peer1, time.Now())[0]
@@ -256,7 +256,7 @@ func updateMsgD1() *bgp.BGPMessage {
 	origin := bgp.NewPathAttributeOrigin(0)
 	aspathParam := []bgp.AsPathParamInterface{bgp.NewAsPathParam(2, []uint16{65000})}
 	aspath := bgp.NewPathAttributeAsPath(aspathParam)
-	nexthop := bgp.NewPathAttributeNextHop("192.168.50.1")
+	nexthop := bgp.ParsePathAttributeNextHop("192.168.50.1")
 	med := bgp.NewPathAttributeMultiExitDisc(0)
 
 	pathAttributes := []bgp.PathAttributeInterface{
@@ -266,7 +266,7 @@ func updateMsgD1() *bgp.BGPMessage {
 		med,
 	}
 
-	nlri := []*bgp.IPAddrPrefix{bgp.NewIPAddrPrefix(24, "10.10.10.0")}
+	nlri := []*bgp.IPAddrPrefix{bgp.ParseIPAddrPrefix(24, "10.10.10.0")}
 	updateMsg := bgp.NewBGPUpdateMessage(nil, pathAttributes, nlri)
 	UpdatePathAttrs4ByteAs(logger, updateMsg.Body.(*bgp.BGPUpdate))
 	return updateMsg
@@ -277,7 +277,7 @@ func updateMsgD2() *bgp.BGPMessage {
 	origin := bgp.NewPathAttributeOrigin(0)
 	aspathParam := []bgp.AsPathParamInterface{bgp.NewAsPathParam(2, []uint16{65100})}
 	aspath := bgp.NewPathAttributeAsPath(aspathParam)
-	nexthop := bgp.NewPathAttributeNextHop("192.168.100.1")
+	nexthop := bgp.ParsePathAttributeNextHop("192.168.100.1")
 	med := bgp.NewPathAttributeMultiExitDisc(100)
 
 	pathAttributes := []bgp.PathAttributeInterface{
@@ -287,7 +287,7 @@ func updateMsgD2() *bgp.BGPMessage {
 		med,
 	}
 
-	nlri := []*bgp.IPAddrPrefix{bgp.NewIPAddrPrefix(24, "20.20.20.0")}
+	nlri := []*bgp.IPAddrPrefix{bgp.ParseIPAddrPrefix(24, "20.20.20.0")}
 	updateMsg := bgp.NewBGPUpdateMessage(nil, pathAttributes, nlri)
 	UpdatePathAttrs4ByteAs(logger, updateMsg.Body.(*bgp.BGPUpdate))
 	return updateMsg
@@ -296,7 +296,7 @@ func updateMsgD3() *bgp.BGPMessage {
 	origin := bgp.NewPathAttributeOrigin(0)
 	aspathParam := []bgp.AsPathParamInterface{bgp.NewAsPathParam(2, []uint16{65100})}
 	aspath := bgp.NewPathAttributeAsPath(aspathParam)
-	nexthop := bgp.NewPathAttributeNextHop("192.168.150.1")
+	nexthop := bgp.ParsePathAttributeNextHop("192.168.150.1")
 	med := bgp.NewPathAttributeMultiExitDisc(100)
 
 	pathAttributes := []bgp.PathAttributeInterface{
@@ -306,8 +306,8 @@ func updateMsgD3() *bgp.BGPMessage {
 		med,
 	}
 
-	nlri := []*bgp.IPAddrPrefix{bgp.NewIPAddrPrefix(24, "30.30.30.0")}
-	w1 := bgp.NewIPAddrPrefix(23, "40.40.40.0")
+	nlri := []*bgp.IPAddrPrefix{bgp.ParseIPAddrPrefix(24, "30.30.30.0")}
+	w1 := bgp.ParseIPAddrPrefix(23, "40.40.40.0")
 	withdrawnRoutes := []*bgp.IPAddrPrefix{w1}
 	updateMsg := bgp.NewBGPUpdateMessage(withdrawnRoutes, pathAttributes, nlri)
 	UpdatePathAttrs4ByteAs(logger, updateMsg.Body.(*bgp.BGPUpdate))
@@ -319,7 +319,7 @@ func TestMultipath(t *testing.T) {
 	origin := bgp.NewPathAttributeOrigin(0)
 	aspathParam := []bgp.AsPathParamInterface{bgp.NewAs4PathParam(2, []uint32{65000})}
 	aspath := bgp.NewPathAttributeAsPath(aspathParam)
-	nexthop := bgp.NewPathAttributeNextHop("192.168.150.1")
+	nexthop := bgp.ParsePathAttributeNextHop("192.168.150.1")
 	med := bgp.NewPathAttributeMultiExitDisc(100)
 
 	pathAttributes := []bgp.PathAttributeInterface{
@@ -329,14 +329,14 @@ func TestMultipath(t *testing.T) {
 		med,
 	}
 
-	nlri := []*bgp.IPAddrPrefix{bgp.NewIPAddrPrefix(24, "10.10.10.0")}
+	nlri := []*bgp.IPAddrPrefix{bgp.ParseIPAddrPrefix(24, "10.10.10.0")}
 	updateMsg := bgp.NewBGPUpdateMessage(nil, pathAttributes, nlri)
 	peer1 := &PeerInfo{AS: 1, Address: net.IP{1, 1, 1, 1}, ID: net.IP{1, 1, 1, 1}}
 	path1 := ProcessMessage(updateMsg, peer1, time.Now())[0]
 	peer2 := &PeerInfo{AS: 2, Address: net.IP{2, 2, 2, 2}, ID: net.IP{2, 2, 2, 2}}
 
 	med = bgp.NewPathAttributeMultiExitDisc(100)
-	nexthop = bgp.NewPathAttributeNextHop("192.168.150.2")
+	nexthop = bgp.ParsePathAttributeNextHop("192.168.150.2")
 	pathAttributes = []bgp.PathAttributeInterface{
 		origin,
 		aspath,
@@ -365,7 +365,7 @@ func TestMultipath(t *testing.T) {
 
 	peer3 := &PeerInfo{AS: 3, Address: net.IP{3, 3, 3, 3}, ID: net.IP{3, 3, 3, 3}}
 	med = bgp.NewPathAttributeMultiExitDisc(50)
-	nexthop = bgp.NewPathAttributeNextHop("192.168.150.3")
+	nexthop = bgp.ParsePathAttributeNextHop("192.168.150.3")
 	pathAttributes = []bgp.PathAttributeInterface{
 		origin,
 		aspath,
@@ -380,7 +380,7 @@ func TestMultipath(t *testing.T) {
 	assert.Equal(t, len(multi), 1)
 	assert.Equal(t, len(d.GetKnownPathList(GLOBAL_RIB_NAME, 0)), 2)
 
-	nexthop = bgp.NewPathAttributeNextHop("192.168.150.2")
+	nexthop = bgp.ParsePathAttributeNextHop("192.168.150.2")
 	pathAttributes = []bgp.PathAttributeInterface{
 		origin,
 		aspath,
@@ -398,7 +398,7 @@ func TestMultipath(t *testing.T) {
 }
 
 func TestIdMap(t *testing.T) {
-	d := NewDestination(bgp.NewIPAddrPrefix(24, "10.10.0.101"), 64)
+	d := NewDestination(bgp.ParseIPAddrPrefix(24, "10.10.0.101"), 64)
 	for i := 0; ; i++ {
 		if id, err := d.localIdMap.FindandSetZeroBit(); err == nil {
 			assert.Equal(t, uint(i+1), id)
@@ -420,9 +420,9 @@ func TestGetWithdrawnPath(t *testing.T) {
 	attrs := []bgp.PathAttributeInterface{
 		bgp.NewPathAttributeOrigin(0),
 	}
-	p1 := NewPath(nil, bgp.NewIPAddrPrefix(24, "13.2.3.0"), false, attrs, time.Now(), false)
-	p2 := NewPath(nil, bgp.NewIPAddrPrefix(24, "13.2.4.0"), false, attrs, time.Now(), false)
-	p3 := NewPath(nil, bgp.NewIPAddrPrefix(24, "13.2.5.0"), false, attrs, time.Now(), false)
+	p1 := NewPath(nil, bgp.ParseIPAddrPrefix(24, "13.2.3.0"), false, attrs, time.Now(), false)
+	p2 := NewPath(nil, bgp.ParseIPAddrPrefix(24, "13.2.4.0"), false, attrs, time.Now(), false)
+	p3 := NewPath(nil, bgp.ParseIPAddrPrefix(24, "13.2.5.0"), false, attrs, time.Now(), false)
 
 	u := &Update{
 		KnownPathList:    []*Path{p2},

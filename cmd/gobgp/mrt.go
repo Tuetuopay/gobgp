@@ -138,7 +138,7 @@ func injectMrt() error {
 						if mrtOpts.NextHop != nil {
 							for i, attr := range e.PathAttributes {
 								if attr.GetType() == bgp.BGP_ATTR_TYPE_NEXT_HOP {
-									e.PathAttributes[i] = bgp.NewPathAttributeNextHop(mrtOpts.NextHop.String())
+									e.PathAttributes[i] = bgp.NewPathAttributeNextHop(mrtOpts.NextHop)
 									break
 								}
 							}
@@ -151,9 +151,9 @@ func injectMrt() error {
 								attrs = append(attrs, attr)
 							} else {
 								a := attr.(*bgp.PathAttributeMpReachNLRI)
-								nexthop := a.Nexthop.String()
+								nexthop := a.Nexthop
 								if mrtOpts.NextHop != nil {
-									nexthop = mrtOpts.NextHop.String()
+									nexthop = mrtOpts.NextHop
 								}
 								attrs = append(attrs, bgp.NewPathAttributeMpReachNLRI(nexthop, []bgp.AddrPrefixInterface{nlri}))
 							}

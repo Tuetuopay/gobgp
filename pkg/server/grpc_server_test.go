@@ -71,14 +71,14 @@ func TestToPathApi(t *testing.T) {
 					Address:      net.IP{10, 12, 12, 12},
 					LocalAddress: net.IP{10, 13, 13, 13},
 				},
-					bgp.NewIPAddrPrefix(8, "10.0.0.0"),
+					bgp.ParseIPAddrPrefix(8, "10.0.0.0"),
 					false,
 					[]bgp.PathAttributeInterface{bgp.NewPathAttributeOrigin(0)},
 					time.Time{},
 					false),
 			},
 			want: &api.Path{
-				Nlri:   anyNlri(bgp.NewIPAddrPrefix(8, "10.0.0.0")),
+				Nlri:   anyNlri(bgp.ParseIPAddrPrefix(8, "10.0.0.0")),
 				Pattrs: anyAttrs([]bgp.PathAttributeInterface{bgp.NewPathAttributeOrigin(0)}),
 				Family: &api.Family{
 					Afi:  api.Family_AFI_IP,

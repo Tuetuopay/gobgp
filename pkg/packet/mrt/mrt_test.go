@@ -110,7 +110,7 @@ func TestMrtRibEntry(t *testing.T) {
 	p := []bgp.PathAttributeInterface{
 		bgp.NewPathAttributeOrigin(3),
 		bgp.NewPathAttributeAsPath(aspath1),
-		bgp.NewPathAttributeNextHop("129.1.1.2"),
+		bgp.ParsePathAttributeNextHop("129.1.1.2"),
 		bgp.NewPathAttributeMultiExitDisc(1 << 20),
 		bgp.NewPathAttributeLocalPref(1 << 22),
 	}
@@ -140,7 +140,7 @@ func TestMrtRibEntryWithAddPath(t *testing.T) {
 	p := []bgp.PathAttributeInterface{
 		bgp.NewPathAttributeOrigin(3),
 		bgp.NewPathAttributeAsPath(aspath1),
-		bgp.NewPathAttributeNextHop("129.1.1.2"),
+		bgp.ParsePathAttributeNextHop("129.1.1.2"),
 		bgp.NewPathAttributeMultiExitDisc(1 << 20),
 		bgp.NewPathAttributeLocalPref(1 << 22),
 	}
@@ -169,7 +169,7 @@ func TestMrtRib(t *testing.T) {
 	p := []bgp.PathAttributeInterface{
 		bgp.NewPathAttributeOrigin(3),
 		bgp.NewPathAttributeAsPath(aspath1),
-		bgp.NewPathAttributeNextHop("129.1.1.2"),
+		bgp.ParsePathAttributeNextHop("129.1.1.2"),
 		bgp.NewPathAttributeMultiExitDisc(1 << 20),
 		bgp.NewPathAttributeLocalPref(1 << 22),
 	}
@@ -178,7 +178,7 @@ func TestMrtRib(t *testing.T) {
 	e2 := NewRibEntry(2, uint32(time.Now().Unix()), 0, p, false)
 	e3 := NewRibEntry(3, uint32(time.Now().Unix()), 0, p, false)
 
-	r1 := NewRib(1, bgp.NewIPAddrPrefix(24, "192.168.0.0"), []*RibEntry{e1, e2, e3})
+	r1 := NewRib(1, bgp.ParseIPAddrPrefix(24, "192.168.0.0"), []*RibEntry{e1, e2, e3})
 	b1, err := r1.Serialize()
 	if err != nil {
 		t.Fatal(err)
@@ -203,7 +203,7 @@ func TestMrtRibWithAddPath(t *testing.T) {
 	p := []bgp.PathAttributeInterface{
 		bgp.NewPathAttributeOrigin(3),
 		bgp.NewPathAttributeAsPath(aspath1),
-		bgp.NewPathAttributeNextHop("129.1.1.2"),
+		bgp.ParsePathAttributeNextHop("129.1.1.2"),
 		bgp.NewPathAttributeMultiExitDisc(1 << 20),
 		bgp.NewPathAttributeLocalPref(1 << 22),
 	}
@@ -212,7 +212,7 @@ func TestMrtRibWithAddPath(t *testing.T) {
 	e2 := NewRibEntry(2, uint32(time.Now().Unix()), 200, p, true)
 	e3 := NewRibEntry(3, uint32(time.Now().Unix()), 300, p, true)
 
-	r1 := NewRib(1, bgp.NewIPAddrPrefix(24, "192.168.0.0"), []*RibEntry{e1, e2, e3})
+	r1 := NewRib(1, bgp.ParseIPAddrPrefix(24, "192.168.0.0"), []*RibEntry{e1, e2, e3})
 	b1, err := r1.Serialize()
 	if err != nil {
 		t.Fatal(err)

@@ -18,6 +18,7 @@ package table
 import (
 	"bytes"
 	"fmt"
+	"net"
 	"reflect"
 
 	"github.com/osrg/gobgp/v3/pkg/log"
@@ -211,11 +212,11 @@ func UpdatePathAttrs4ByteAs(logger log.Logger, msg *bgp.BGPUpdate) error {
 
 func UpdatePathAggregator2ByteAs(msg *bgp.BGPUpdate) {
 	as := uint32(0)
-	var addr string
+	var addr net.IP
 	for i, attr := range msg.PathAttributes {
 		switch agg := attr.(type) {
 		case *bgp.PathAttributeAggregator:
-			addr = agg.Value.Address.String()
+			addr = agg.Value.Address
 			if agg.Value.AS > (1<<16)-1 {
 				as = agg.Value.AS
 				msg.PathAttributes[i] = bgp.NewPathAttributeAggregator(uint16(bgp.AS_TRANS), addr)
@@ -313,7 +314,7 @@ func createMPReachMessage(path *Path) *bgp.BGPMessage {
 	attrs := make([]bgp.PathAttributeInterface, 0, len(oattrs))
 	for _, a := range oattrs {
 		if a.GetType() == bgp.BGP_ATTR_TYPE_MP_REACH_NLRI {
-			attrs = append(attrs, bgp.NewPathAttributeMpReachNLRI(path.GetNexthop().String(), []bgp.AddrPrefixInterface{path.GetNlri()}))
+			attrs = append(attrs, bgp.NewPathAttributeMpReachNLRI(path.GetNexthop(), []bgp.AddrPrefixInterface{path.GetNlri()}))
 		} else {
 			attrs = append(attrs, a)
 		}
@@ -451,7 +452,7 @@ func (p *packerV4) pack(options ...*bgp.MarshallingOption) []*bgp.BGPMessage {
 			// while we build the update message
 			// we do not want to modify the `path` though
 			if paths[0].getPathAttr(bgp.BGP_ATTR_TYPE_NEXT_HOP) == nil {
-				attrs = append(attrs, bgp.NewPathAttributeNextHop(paths[0].GetNexthop().String()))
+				attrs = append(attrs, bgp.NewPathAttributeNextHop(paths[0].GetNexthop()))
 			}
 			// if we have ever reach here
 			// there is no point keeping MP_REACH_NLRI in the announcement

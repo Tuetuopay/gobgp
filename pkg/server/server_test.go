@@ -771,9 +771,9 @@ func TestMonitor(test *testing.T) {
 	// Advertises a route.
 	attrs := []bgp.PathAttributeInterface{
 		bgp.NewPathAttributeOrigin(0),
-		bgp.NewPathAttributeNextHop("10.0.0.1"),
+		bgp.ParsePathAttributeNextHop("10.0.0.1"),
 	}
-	prefix := bgp.NewIPAddrPrefix(24, "10.0.0.0")
+	prefix := bgp.ParseIPAddrPrefix(24, "10.0.0.0")
 	path, _ := apiutil.NewPath(prefix, false, attrs, time.Now())
 	if _, err := t.AddPath(context.Background(), &api.AddPathRequest{
 		TableType: api.TableType_GLOBAL,
@@ -792,7 +792,7 @@ func TestMonitor(test *testing.T) {
 
 	// Withdraws the previous route.
 	// NOTE: Withdraw should not require any path attribute.
-	if err := t.addPathList("", []*table.Path{table.NewPath(nil, bgp.NewIPAddrPrefix(24, "10.0.0.0"), true, nil, time.Now(), false)}); err != nil {
+	if err := t.addPathList("", []*table.Path{table.NewPath(nil, bgp.ParseIPAddrPrefix(24, "10.0.0.0"), true, nil, time.Now(), false)}); err != nil {
 		test.Error(err)
 	}
 	ev = <-w.Event()
@@ -807,7 +807,7 @@ func TestMonitor(test *testing.T) {
 	w.Stop()
 
 	// Prepares an initial route to test WatchUpdate with "current" flag.
-	if err := t.addPathList("", []*table.Path{table.NewPath(nil, bgp.NewIPAddrPrefix(24, "10.1.0.0"), false, attrs, time.Now(), false)}); err != nil {
+	if err := t.addPathList("", []*table.Path{table.NewPath(nil, bgp.ParseIPAddrPrefix(24, "10.1.0.0"), false, attrs, time.Now(), false)}); err != nil {
 		test.Error(err)
 	}
 	for {
@@ -836,7 +836,7 @@ func TestMonitor(test *testing.T) {
 	assert.Equal(len(u.PathList), 0) // End of RIB
 
 	// Advertises an additional route.
-	if err := t.addPathList("", []*table.Path{table.NewPath(nil, bgp.NewIPAddrPrefix(24, "10.2.0.0"), false, attrs, time.Now(), false)}); err != nil {
+	if err := t.addPathList("", []*table.Path{table.NewPath(nil, bgp.ParseIPAddrPrefix(24, "10.2.0.0"), false, attrs, time.Now(), false)}); err != nil {
 		test.Error(err)
 	}
 	ev = <-w.Event()
@@ -847,7 +847,7 @@ func TestMonitor(test *testing.T) {
 
 	// Withdraws the previous route.
 	// NOTE: Withdraw should not require any path attribute.
-	if err := t.addPathList("", []*table.Path{table.NewPath(nil, bgp.NewIPAddrPrefix(24, "10.2.0.0"), true, nil, time.Now(), false)}); err != nil {
+	if err := t.addPathList("", []*table.Path{table.NewPath(nil, bgp.ParseIPAddrPrefix(24, "10.2.0.0"), true, nil, time.Now(), false)}); err != nil {
 		test.Error(err)
 	}
 	ev = <-w.Event()
@@ -861,10 +861,10 @@ func TestMonitor(test *testing.T) {
 	w = s.watch(watchBestPath(false))
 	attrs = []bgp.PathAttributeInterface{
 		bgp.NewPathAttributeOrigin(0),
-		bgp.NewPathAttributeNextHop("10.0.0.1"),
+		bgp.ParsePathAttributeNextHop("10.0.0.1"),
 	}
 
-	if err := s.addPathList("vrf1", []*table.Path{table.NewPath(nil, bgp.NewIPAddrPrefix(24, "10.0.0.0"), false, attrs, time.Now(), false)}); err != nil {
+	if err := s.addPathList("vrf1", []*table.Path{table.NewPath(nil, bgp.ParseIPAddrPrefix(24, "10.0.0.0"), false, attrs, time.Now(), false)}); err != nil {
 		test.Error(err)
 	}
 	ev = <-w.Event()
@@ -877,7 +877,7 @@ func TestMonitor(test *testing.T) {
 	assert.True(b.Vrf[2])
 
 	// Withdraw the route
-	if err := s.addPathList("vrf1", []*table.Path{table.NewPath(nil, bgp.NewIPAddrPrefix(24, "10.0.0.0"), true, attrs, time.Now(), false)}); err != nil {
+	if err := s.addPathList("vrf1", []*table.Path{table.NewPath(nil, bgp.ParseIPAddrPrefix(24, "10.0.0.0"), true, attrs, time.Now(), false)}); err != nil {
 		test.Error(err)
 	}
 	ev = <-w.Event()
@@ -977,7 +977,7 @@ func TestFilterpathWitheBGP(t *testing.T) {
 	p1, pi1 := newPeerandInfo(as, p1As, "192.168.0.1", rib)
 	p2, pi2 := newPeerandInfo(as, p2As, "192.168.0.2", rib)
 
-	nlri := bgp.NewIPAddrPrefix(24, "10.10.10.0")
+	nlri := bgp.ParseIPAddrPrefix(24, "10.10.10.0")
 	pa1 := []bgp.PathAttributeInterface{bgp.NewPathAttributeAsPath([]bgp.AsPathParamInterface{bgp.NewAs4PathParam(2, []uint32{p1As})}), bgp.NewPathAttributeLocalPref(200)}
 	pa2 := []bgp.PathAttributeInterface{bgp.NewPathAttributeAsPath([]bgp.AsPathParamInterface{bgp.NewAs4PathParam(2, []uint32{p2As})})}
 
@@ -1019,7 +1019,7 @@ func TestFilterpathWithiBGP(t *testing.T) {
 	//p2, pi2 := newPeerandInfo(as, as, "192.168.0.2", rib)
 	p2, _ := newPeerandInfo(as, as, "192.168.0.2", rib)
 
-	nlri := bgp.NewIPAddrPrefix(24, "10.10.10.0")
+	nlri := bgp.ParseIPAddrPrefix(24, "10.10.10.0")
 	pa1 := []bgp.PathAttributeInterface{bgp.NewPathAttributeAsPath([]bgp.AsPathParamInterface{bgp.NewAs4PathParam(2, []uint32{as})}), bgp.NewPathAttributeLocalPref(200)}
 	//pa2 := []bgp.PathAttributeInterface{bgp.NewPathAttributeAsPath([]bgp.AsPathParamInterface{bgp.NewAs4PathParam(2, []uint32{as})})}
 
@@ -1081,7 +1081,7 @@ func TestFilterpathWithRejectPolicy(t *testing.T) {
 	p2.policy.AddPolicyAssignment(p2.TableID(), table.POLICY_DIRECTION_EXPORT, policies, table.ROUTE_TYPE_ACCEPT)
 
 	for _, addCommunity := range []bool{false, true, false, true} {
-		nlri := bgp.NewIPAddrPrefix(24, "10.10.10.0")
+		nlri := bgp.ParseIPAddrPrefix(24, "10.10.10.0")
 		pa1 := []bgp.PathAttributeInterface{bgp.NewPathAttributeAsPath([]bgp.AsPathParamInterface{bgp.NewAs4PathParam(2, []uint32{1})}), bgp.NewPathAttributeLocalPref(200)}
 		if addCommunity {
 			pa1 = append(pa1, bgp.NewPathAttributeCommunities([]uint32{100<<16 | 100}))
@@ -1634,9 +1634,9 @@ func TestDoNotReactToDuplicateRTCMemberships(t *testing.T) {
 	// Add route to vrf1 on s2
 	attrs := []bgp.PathAttributeInterface{
 		bgp.NewPathAttributeOrigin(0),
-		bgp.NewPathAttributeNextHop("2.2.2.2"),
+		bgp.ParsePathAttributeNextHop("2.2.2.2"),
 	}
-	prefix := bgp.NewIPAddrPrefix(24, "10.30.2.0")
+	prefix := bgp.ParseIPAddrPrefix(24, "10.30.2.0")
 	path, _ := apiutil.NewPath(prefix, false, attrs, time.Now())
 
 	if _, err := s2.AddPath(ctx, &api.AddPathRequest{
@@ -1686,7 +1686,7 @@ func TestDoNotReactToDuplicateRTCMemberships(t *testing.T) {
 		ID:      net.ParseIP("1.1.1.1"),
 	}, rtcNLRI, false, []bgp.PathAttributeInterface{
 		bgp.NewPathAttributeOrigin(0),
-		bgp.NewPathAttributeNextHop("1.1.1.1"),
+		bgp.ParsePathAttributeNextHop("1.1.1.1"),
 	}, time.Now(), false)
 
 	s1Peer := s2.neighborMap["127.0.0.1"]

@@ -159,7 +159,7 @@ func (manager *TableManager) AddVrf(name string, id uint32, rd bgp.RouteDistingu
 		nlri := bgp.NewRouteTargetMembershipNLRI(info.AS, target)
 		pattr := make([]bgp.PathAttributeInterface, 0, 2)
 		pattr = append(pattr, bgp.NewPathAttributeOrigin(bgp.BGP_ORIGIN_ATTR_TYPE_IGP))
-		pattr = append(pattr, bgp.NewPathAttributeMpReachNLRI(nexthop, []bgp.AddrPrefixInterface{nlri}))
+		pattr = append(pattr, bgp.ParsePathAttributeMpReachNLRI(nexthop, []bgp.AddrPrefixInterface{nlri}))
 		msgs = append(msgs, NewPath(info, nlri, false, pattr, time.Now(), false))
 	}
 	return msgs, nil

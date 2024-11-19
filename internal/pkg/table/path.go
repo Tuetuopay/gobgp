@@ -300,26 +300,22 @@ func UpdatePathAttrs(logger log.Logger, global *oc.Global, peer *oc.Neighbor, in
 			// address for that session.
 			if path.GetRouteFamily() == bgp.RF_RTC_UC {
 				path.SetNexthop(localAddress)
-				path.setPathAttr(bgp.NewPathAttributeOriginatorId(info.LocalID.String()))
+				path.setPathAttr(bgp.NewPathAttributeOriginatorId(info.LocalID))
 			} else if path.getPathAttr(bgp.BGP_ATTR_TYPE_ORIGINATOR_ID) == nil {
 				if path.IsLocal() {
-					path.setPathAttr(bgp.NewPathAttributeOriginatorId(global.Config.RouterId))
+					path.setPathAttr(bgp.ParsePathAttributeOriginatorId(global.Config.RouterId))
 				} else {
-					path.setPathAttr(bgp.NewPathAttributeOriginatorId(info.ID.String()))
+					path.setPathAttr(bgp.NewPathAttributeOriginatorId(info.ID))
 				}
 			}
 			// When an RR reflects a route, it MUST prepend the local CLUSTER_ID to the CLUSTER_LIST.
 			// If the CLUSTER_LIST is empty, it MUST create a new one.
-			clusterID := string(peer.RouteReflector.State.RouteReflectorClusterId)
+			clusterID := net.ParseIP(string(peer.RouteReflector.State.RouteReflectorClusterId))
 			if p := path.getPathAttr(bgp.BGP_ATTR_TYPE_CLUSTER_LIST); p == nil {
-				path.setPathAttr(bgp.NewPathAttributeClusterList([]string{clusterID}))
+				path.setPathAttr(bgp.NewPathAttributeClusterList([]net.IP{clusterID}))
 			} else {
 				clusterList := p.(*bgp.PathAttributeClusterList)
-				newClusterList := make([]string, 0, len(clusterList.Value))
-				for _, ip := range clusterList.Value {
-					newClusterList = append(newClusterList, ip.String())
-				}
-				path.setPathAttr(bgp.NewPathAttributeClusterList(append([]string{clusterID}, newClusterList...)))
+				path.setPathAttr(bgp.NewPathAttributeClusterList(append([]net.IP{clusterID}, clusterList.Value...)))
 			}
 		}
 
@@ -465,18 +461,18 @@ func (path *Path) GetNexthop() net.IP {
 func (path *Path) SetNexthop(nexthop net.IP) {
 	if path.GetRouteFamily() == bgp.RF_IPv4_UC && nexthop.To4() == nil {
 		path.delPathAttr(bgp.BGP_ATTR_TYPE_NEXT_HOP)
-		mpreach := bgp.NewPathAttributeMpReachNLRI(nexthop.String(), []bgp.AddrPrefixInterface{path.GetNlri()})
+		mpreach := bgp.NewPathAttributeMpReachNLRI(nexthop, []bgp.AddrPrefixInterface{path.GetNlri()})
 		path.setPathAttr(mpreach)
 		return
 	}
 	attr := path.getPathAttr(bgp.BGP_ATTR_TYPE_NEXT_HOP)
 	if attr != nil {
-		path.setPathAttr(bgp.NewPathAttributeNextHop(nexthop.String()))
+		path.setPathAttr(bgp.NewPathAttributeNextHop(nexthop))
 	}
 	attr = path.getPathAttr(bgp.BGP_ATTR_TYPE_MP_REACH_NLRI)
 	if attr != nil {
 		oldNlri := attr.(*bgp.PathAttributeMpReachNLRI)
-		path.setPathAttr(bgp.NewPathAttributeMpReachNLRI(nexthop.String(), oldNlri.Value))
+		path.setPathAttr(bgp.NewPathAttributeMpReachNLRI(nexthop, oldNlri.Value))
 	}
 }
 
@@ -1119,7 +1115,7 @@ func (v *Vrf) ToGlobalPath(path *Path) error {
 	case bgp.RF_IPv4_UC:
 		n := nlri.(*bgp.IPAddrPrefix)
 		pathIdentifier := path.GetNlri().PathIdentifier()
-		path.OriginInfo().nlri = bgp.NewLabeledVPNIPAddrPrefix(n.Length, n.Prefix.String(), *bgp.NewMPLSLabelStack(v.MplsLabel), v.Rd)
+		path.OriginInfo().nlri = bgp.NewLabeledVPNIPAddrPrefix(n.Length, n.Prefix, *bgp.NewMPLSLabelStack(v.MplsLabel), v.Rd)
 		path.GetNlri().SetPathIdentifier(pathIdentifier)
 	case bgp.RF_FS_IPv4_UC:
 		n := nlri.(*bgp.FlowSpecIPv4Unicast)
@@ -1129,7 +1125,7 @@ func (v *Vrf) ToGlobalPath(path *Path) error {
 	case bgp.RF_IPv6_UC:
 		n := nlri.(*bgp.IPv6AddrPrefix)
 		pathIdentifier := path.GetNlri().PathIdentifier()
-		path.OriginInfo().nlri = bgp.NewLabeledVPNIPv6AddrPrefix(n.Length, n.Prefix.String(), *bgp.NewMPLSLabelStack(v.MplsLabel), v.Rd)
+		path.OriginInfo().nlri = bgp.NewLabeledVPNIPv6AddrPrefix(n.Length, n.Prefix, *bgp.NewMPLSLabelStack(v.MplsLabel), v.Rd)
 		path.GetNlri().SetPathIdentifier(pathIdentifier)
 	case bgp.RF_FS_IPv6_UC:
 		n := nlri.(*bgp.FlowSpecIPv6Unicast)
@@ -1170,11 +1166,11 @@ func (p *Path) ToGlobal(vrf *Vrf) *Path {
 	switch rf := p.GetRouteFamily(); rf {
 	case bgp.RF_IPv4_UC:
 		n := nlri.(*bgp.IPAddrPrefix)
-		nlri = bgp.NewLabeledVPNIPAddrPrefix(n.Length, n.Prefix.String(), *bgp.NewMPLSLabelStack(vrf.MplsLabel), vrf.Rd)
+		nlri = bgp.NewLabeledVPNIPAddrPrefix(n.Length, n.Prefix, *bgp.NewMPLSLabelStack(vrf.MplsLabel), vrf.Rd)
 		nlri.SetPathIdentifier(pathId)
 	case bgp.RF_IPv6_UC:
 		n := nlri.(*bgp.IPv6AddrPrefix)
-		nlri = bgp.NewLabeledVPNIPv6AddrPrefix(n.Length, n.Prefix.String(), *bgp.NewMPLSLabelStack(vrf.MplsLabel), vrf.Rd)
+		nlri = bgp.NewLabeledVPNIPv6AddrPrefix(n.Length, n.Prefix, *bgp.NewMPLSLabelStack(vrf.MplsLabel), vrf.Rd)
 		nlri.SetPathIdentifier(pathId)
 	case bgp.RF_EVPN:
 		n := nlri.(*bgp.EVPNNLRI)
@@ -1224,7 +1220,7 @@ func (p *Path) ToGlobal(vrf *Vrf) *Path {
 	path := NewPath(p.OriginInfo().source, nlri, p.IsWithdraw, p.GetPathAttrs(), p.GetTimestamp(), false)
 	path.SetExtCommunities(vrf.ExportRt, false)
 	path.delPathAttr(bgp.BGP_ATTR_TYPE_NEXT_HOP)
-	path.setPathAttr(bgp.NewPathAttributeMpReachNLRI(nh.String(), []bgp.AddrPrefixInterface{nlri}))
+	path.setPathAttr(bgp.NewPathAttributeMpReachNLRI(nh, []bgp.AddrPrefixInterface{nlri}))
 	return path
 }
 
@@ -1238,7 +1234,7 @@ func (p *Path) ToLocal() *Path {
 		n := nlri.(*bgp.LabeledVPNIPAddrPrefix)
 		_, c, _ := net.ParseCIDR(n.IPPrefix())
 		ones, _ := c.Mask.Size()
-		nlri = bgp.NewIPAddrPrefix(uint8(ones), c.IP.String())
+		nlri = bgp.NewIPAddrPrefix(uint8(ones), c.IP)
 		nlri.SetPathLocalIdentifier(localPathId)
 		nlri.SetPathIdentifier(pathId)
 	case bgp.RF_FS_IPv4_VPN:
@@ -1250,7 +1246,7 @@ func (p *Path) ToLocal() *Path {
 		n := nlri.(*bgp.LabeledVPNIPv6AddrPrefix)
 		_, c, _ := net.ParseCIDR(n.IPPrefix())
 		ones, _ := c.Mask.Size()
-		nlri = bgp.NewIPv6AddrPrefix(uint8(ones), c.IP.String())
+		nlri = bgp.NewIPv6AddrPrefix(uint8(ones), c.IP)
 		nlri.SetPathLocalIdentifier(localPathId)
 		nlri.SetPathIdentifier(pathId)
 	case bgp.RF_FS_IPv6_VPN:
@@ -1281,7 +1277,7 @@ func (p *Path) ToLocal() *Path {
 	if f == bgp.RF_IPv4_VPN {
 		nh := path.GetNexthop()
 		path.delPathAttr(bgp.BGP_ATTR_TYPE_MP_REACH_NLRI)
-		path.setPathAttr(bgp.NewPathAttributeNextHop(nh.String()))
+		path.setPathAttr(bgp.NewPathAttributeNextHop(nh))
 	}
 	path.IsNexthopInvalid = p.IsNexthopInvalid
 	return path

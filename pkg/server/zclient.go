@@ -278,15 +278,15 @@ func newPathFromIPRouteMessage(logger log.Logger, m *zebra.Message, version uint
 
 	switch family {
 	case bgp.RF_IPv4_UC:
-		nlri = bgp.NewIPAddrPrefix(body.Prefix.PrefixLen, body.Prefix.Prefix.String())
+		nlri = bgp.NewIPAddrPrefix(body.Prefix.PrefixLen, body.Prefix.Prefix)
 		if len(body.Nexthops) > 0 {
-			pattr = append(pattr, bgp.NewPathAttributeNextHop(body.Nexthops[0].Gate.String()))
+			pattr = append(pattr, bgp.NewPathAttributeNextHop(body.Nexthops[0].Gate))
 		}
 	case bgp.RF_IPv6_UC:
-		nlri = bgp.NewIPv6AddrPrefix(body.Prefix.PrefixLen, body.Prefix.Prefix.String())
-		nexthop := ""
+		nlri = bgp.NewIPv6AddrPrefix(body.Prefix.PrefixLen, body.Prefix.Prefix)
+		var nexthop net.IP = nil
 		if len(body.Nexthops) > 0 {
-			nexthop = body.Nexthops[0].Gate.String()
+			nexthop = body.Nexthops[0].Gate
 		}
 		pattr = append(pattr, bgp.NewPathAttributeMpReachNLRI(nexthop, []bgp.AddrPrefixInterface{nlri}))
 	default:

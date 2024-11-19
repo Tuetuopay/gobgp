@@ -33,8 +33,8 @@ func NewTestBGPOpenMessage() *BGPMessage {
 }
 
 func NewTestBGPUpdateMessage() *BGPMessage {
-	w1 := NewIPAddrPrefix(23, "121.1.3.2")
-	w2 := NewIPAddrPrefix(17, "100.33.3.0")
+	w1 := ParseIPAddrPrefix(23, "121.1.3.2")
+	w2 := ParseIPAddrPrefix(17, "100.33.3.0")
 	w := []*IPAddrPrefix{w1, w2}
 
 	aspath1 := []AsPathParamInterface{
@@ -60,38 +60,38 @@ func NewTestBGPUpdateMessage() *BGPMessage {
 	ecommunities := []ExtendedCommunityInterface{
 		NewTwoOctetAsSpecificExtended(EC_SUBTYPE_ROUTE_TARGET, 10003, 3<<20, isTransitive),
 		NewFourOctetAsSpecificExtended(EC_SUBTYPE_ROUTE_TARGET, 1<<20, 300, isTransitive),
-		NewIPv4AddressSpecificExtended(EC_SUBTYPE_ROUTE_TARGET, "192.2.1.2", 3000, isTransitive),
+		ParseIPv4AddressSpecificExtended(EC_SUBTYPE_ROUTE_TARGET, "192.2.1.2", 3000, isTransitive),
 		NewOpaqueExtended(false, []byte{1, 2, 3, 4, 5, 6, 7}),
 		NewValidationExtended(VALIDATION_STATE_INVALID),
 		NewUnknownExtended(99, []byte{0, 1, 2, 3, 4, 5, 6, 7}),
 		NewESILabelExtended(1000, true),
-		NewESImportRouteTarget("11:22:33:44:55:66"),
+		ParseESImportRouteTarget("11:22:33:44:55:66"),
 		NewMacMobilityExtended(123, false),
 	}
 
 	prefixes1 := []AddrPrefixInterface{
-		NewLabeledVPNIPAddrPrefix(24, "192.0.9.0", *NewMPLSLabelStack(1, 2, 3),
+		ParseLabeledVPNIPAddrPrefix(24, "192.0.9.0", *NewMPLSLabelStack(1, 2, 3),
 			NewRouteDistinguisherTwoOctetAS(256, 10000)),
-		NewLabeledVPNIPAddrPrefix(24, "192.10.8.0", *NewMPLSLabelStack(5, 6, 7, 8),
-			NewRouteDistinguisherIPAddressAS("10.0.1.1", 10001)),
+		ParseLabeledVPNIPAddrPrefix(24, "192.10.8.0", *NewMPLSLabelStack(5, 6, 7, 8),
+			ParseRouteDistinguisherIPAddressAS("10.0.1.1", 10001)),
 	}
 
-	prefixes2 := []AddrPrefixInterface{NewIPv6AddrPrefix(128,
+	prefixes2 := []AddrPrefixInterface{ParseIPv6AddrPrefix(128,
 		"fe80:1234:1234:5667:8967:af12:8912:1023")}
 
-	prefixes3 := []AddrPrefixInterface{NewLabeledVPNIPv6AddrPrefix(128,
+	prefixes3 := []AddrPrefixInterface{ParseLabeledVPNIPv6AddrPrefix(128,
 		"fe80:1234:1234:5667:8967:af12:1203:33a1", *NewMPLSLabelStack(5, 6),
 		NewRouteDistinguisherFourOctetAS(5, 6))}
 
-	prefixes4 := []AddrPrefixInterface{NewLabeledIPAddrPrefix(25, "192.168.0.0",
+	prefixes4 := []AddrPrefixInterface{ParseLabeledIPAddrPrefix(25, "192.168.0.0",
 		*NewMPLSLabelStack(5, 6, 7))}
 
 	prefixes5 := []AddrPrefixInterface{
 		NewEVPNEthernetAutoDiscoveryRoute(NewRouteDistinguisherFourOctetAS(5, 6), EthernetSegmentIdentifier{ESI_ARBITRARY, make([]byte, 9)}, 2, 2),
-		NewEVPNMacIPAdvertisementRoute(NewRouteDistinguisherFourOctetAS(5, 6), EthernetSegmentIdentifier{ESI_ARBITRARY, make([]byte, 9)}, 3, "01:23:45:67:89:ab", "192.2.1.2", []uint32{3, 4}),
-		NewEVPNMulticastEthernetTagRoute(NewRouteDistinguisherFourOctetAS(5, 6), 3, "192.2.1.2"),
-		NewEVPNEthernetSegmentRoute(NewRouteDistinguisherFourOctetAS(5, 6), EthernetSegmentIdentifier{ESI_ARBITRARY, make([]byte, 9)}, "192.2.1.1"),
-		NewEVPNIPPrefixRoute(NewRouteDistinguisherFourOctetAS(5, 6), EthernetSegmentIdentifier{ESI_ARBITRARY, make([]byte, 9)}, 5, 24, "192.2.1.0", "192.3.1.1", 5),
+		ParseEVPNMacIPAdvertisementRoute(NewRouteDistinguisherFourOctetAS(5, 6), EthernetSegmentIdentifier{ESI_ARBITRARY, make([]byte, 9)}, 3, "01:23:45:67:89:ab", "192.2.1.2", []uint32{3, 4}),
+		ParseEVPNMulticastEthernetTagRoute(NewRouteDistinguisherFourOctetAS(5, 6), 3, "192.2.1.2"),
+		ParseEVPNEthernetSegmentRoute(NewRouteDistinguisherFourOctetAS(5, 6), EthernetSegmentIdentifier{ESI_ARBITRARY, make([]byte, 9)}, "192.2.1.1"),
+		ParseEVPNIPPrefixRoute(NewRouteDistinguisherFourOctetAS(5, 6), EthernetSegmentIdentifier{ESI_ARBITRARY, make([]byte, 9)}, 5, 24, "192.2.1.0", "192.3.1.1", 5),
 	}
 
 	prefixes6 := []AddrPrefixInterface{NewVPLSNLRI(NewRouteDistinguisherFourOctetAS(5, 6), 101, 100, 10, 1000)}
@@ -100,30 +100,30 @@ func NewTestBGPUpdateMessage() *BGPMessage {
 		NewPathAttributeOrigin(3),
 		NewPathAttributeAsPath(aspath1),
 		NewPathAttributeAsPath(aspath2),
-		NewPathAttributeNextHop("129.1.1.2"),
+		ParsePathAttributeNextHop("129.1.1.2"),
 		NewPathAttributeMultiExitDisc(1 << 20),
 		NewPathAttributeLocalPref(1 << 22),
 		NewPathAttributeAtomicAggregate(),
-		NewPathAttributeAggregator(uint16(30002), "129.0.2.99"),
-		NewPathAttributeAggregator(uint32(30002), "129.0.2.99"),
-		NewPathAttributeAggregator(uint32(300020), "129.0.2.99"),
+		ParsePathAttributeAggregator(uint16(30002), "129.0.2.99"),
+		ParsePathAttributeAggregator(uint32(30002), "129.0.2.99"),
+		ParsePathAttributeAggregator(uint32(300020), "129.0.2.99"),
 		NewPathAttributeCommunities([]uint32{1, 3}),
-		NewPathAttributeOriginatorId("10.10.0.1"),
-		NewPathAttributeClusterList([]string{"10.10.0.2", "10.10.0.3"}),
+		ParsePathAttributeOriginatorId("10.10.0.1"),
+		ParsePathAttributeClusterList([]string{"10.10.0.2", "10.10.0.3"}),
 		NewPathAttributeExtendedCommunities(ecommunities),
 		NewPathAttributeAs4Path(aspath3),
-		NewPathAttributeAs4Aggregator(10000, "112.22.2.1"),
-		NewPathAttributeMpReachNLRI("112.22.2.0", prefixes1),
-		NewPathAttributeMpReachNLRI("1023::", prefixes2),
-		NewPathAttributeMpReachNLRI("fe80::", prefixes3),
-		NewPathAttributeMpReachNLRI("129.1.1.1", prefixes4),
-		NewPathAttributeMpReachNLRI("129.1.1.1", prefixes5),
-		NewPathAttributeMpReachNLRI("135.1.1.1", prefixes6),
+		ParsePathAttributeAs4Aggregator(10000, "112.22.2.1"),
+		ParsePathAttributeMpReachNLRI("112.22.2.0", prefixes1),
+		ParsePathAttributeMpReachNLRI("1023::", prefixes2),
+		ParsePathAttributeMpReachNLRI("fe80::", prefixes3),
+		ParsePathAttributeMpReachNLRI("129.1.1.1", prefixes4),
+		ParsePathAttributeMpReachNLRI("129.1.1.1", prefixes5),
+		ParsePathAttributeMpReachNLRI("135.1.1.1", prefixes6),
 		NewPathAttributeMpUnreachNLRI(prefixes1),
 		//NewPathAttributeMpReachNLRI("112.22.2.0", []AddrPrefixInterface{}),
 		//NewPathAttributeMpUnreachNLRI([]AddrPrefixInterface{}),
 		NewPathAttributeUnknown(BGP_ATTR_FLAG_TRANSITIVE, 100, []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}),
 	}
-	n := []*IPAddrPrefix{NewIPAddrPrefix(24, "13.2.3.1")}
+	n := []*IPAddrPrefix{ParseIPAddrPrefix(24, "13.2.3.1")}
 	return NewBGPUpdateMessage(w, p, n)
 }

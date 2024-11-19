@@ -17,10 +17,10 @@ func bgpupdate() *BGPMessage {
 	p := []PathAttributeInterface{
 		NewPathAttributeOrigin(1),
 		NewPathAttributeAsPath(aspath),
-		NewPathAttributeNextHop("192.168.1.1"),
+		ParsePathAttributeNextHop("192.168.1.1"),
 	}
 
-	n := []*IPAddrPrefix{NewIPAddrPrefix(24, "10.10.10.0")}
+	n := []*IPAddrPrefix{ParseIPAddrPrefix(24, "10.10.10.0")}
 	return NewBGPUpdateMessage(nil, p, n)
 }
 
@@ -29,13 +29,13 @@ func bgpupdateV6() *BGPMessage {
 		NewAsPathParam(2, []uint16{65001}),
 	}
 
-	prefixes := []AddrPrefixInterface{NewIPv6AddrPrefix(100,
+	prefixes := []AddrPrefixInterface{ParseIPv6AddrPrefix(100,
 		"fe80:1234:1234:5667:8967:af12:8912:1023")}
 
 	p := []PathAttributeInterface{
 		NewPathAttributeOrigin(1),
 		NewPathAttributeAsPath(aspath),
-		NewPathAttributeMpReachNLRI("1023::", prefixes),
+		ParsePathAttributeMpReachNLRI("1023::", prefixes),
 	}
 	return NewBGPUpdateMessage(nil, p, nil)
 }
@@ -393,8 +393,8 @@ func Test_Validate_aspath(t *testing.T) {
 func Test_Validate_flowspec(t *testing.T) {
 	assert := assert.New(t)
 	cmp := make([]FlowSpecComponentInterface, 0)
-	cmp = append(cmp, NewFlowSpecDestinationPrefix(NewIPAddrPrefix(24, "10.0.0.0")))
-	cmp = append(cmp, NewFlowSpecSourcePrefix(NewIPAddrPrefix(24, "10.0.0.0")))
+	cmp = append(cmp, NewFlowSpecDestinationPrefix(ParseIPAddrPrefix(24, "10.0.0.0")))
+	cmp = append(cmp, NewFlowSpecSourcePrefix(ParseIPAddrPrefix(24, "10.0.0.0")))
 	item1 := NewFlowSpecComponentItem(DEC_NUM_OP_EQ, TCP)
 	cmp = append(cmp, NewFlowSpecComponent(FLOW_SPEC_TYPE_IP_PROTO, []*FlowSpecComponentItem{item1}))
 	item2 := NewFlowSpecComponentItem(DEC_NUM_OP_GT_EQ, 20)
@@ -414,16 +414,16 @@ func Test_Validate_flowspec(t *testing.T) {
 	item7 := NewFlowSpecComponentItem(BITMASK_FLAG_OP_MATCH, isFragment)
 	cmp = append(cmp, NewFlowSpecComponent(FLOW_SPEC_TYPE_FRAGMENT, []*FlowSpecComponentItem{item7}))
 	n1 := NewFlowSpecIPv4Unicast(cmp)
-	a := NewPathAttributeMpReachNLRI("", []AddrPrefixInterface{n1})
+	a := ParsePathAttributeMpReachNLRI("", []AddrPrefixInterface{n1})
 	m := map[RouteFamily]BGPAddPathMode{RF_FS_IPv4_UC: BGP_ADD_PATH_NONE}
 	_, err := ValidateAttribute(a, m, false, false, false)
 	assert.Nil(err)
 
 	cmp = make([]FlowSpecComponentInterface, 0)
-	cmp = append(cmp, NewFlowSpecSourcePrefix(NewIPAddrPrefix(24, "10.0.0.0")))
-	cmp = append(cmp, NewFlowSpecDestinationPrefix(NewIPAddrPrefix(24, "10.0.0.0")))
+	cmp = append(cmp, NewFlowSpecSourcePrefix(ParseIPAddrPrefix(24, "10.0.0.0")))
+	cmp = append(cmp, NewFlowSpecDestinationPrefix(ParseIPAddrPrefix(24, "10.0.0.0")))
 	n1 = NewFlowSpecIPv4Unicast(cmp)
-	a = NewPathAttributeMpReachNLRI("", []AddrPrefixInterface{n1})
+	a = ParsePathAttributeMpReachNLRI("", []AddrPrefixInterface{n1})
 	// Swaps components order to reproduce the rules order violation.
 	n1.Value[0], n1.Value[1] = n1.Value[1], n1.Value[0]
 	_, err = ValidateAttribute(a, m, false, false, false)

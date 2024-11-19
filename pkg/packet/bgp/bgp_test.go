@@ -73,18 +73,18 @@ func Test_Message(t *testing.T) {
 }
 
 func Test_IPAddrPrefixString(t *testing.T) {
-	ipv4 := NewIPAddrPrefix(24, "129.6.10.0")
+	ipv4 := ParseIPAddrPrefix(24, "129.6.10.0")
 	assert.Equal(t, "129.6.10.0/24", ipv4.String())
-	ipv4 = NewIPAddrPrefix(24, "129.6.10.1")
+	ipv4 = ParseIPAddrPrefix(24, "129.6.10.1")
 	assert.Equal(t, "129.6.10.0/24", ipv4.String())
-	ipv4 = NewIPAddrPrefix(22, "129.6.129.0")
+	ipv4 = ParseIPAddrPrefix(22, "129.6.129.0")
 	assert.Equal(t, "129.6.128.0/22", ipv4.String())
 
-	ipv6 := NewIPv6AddrPrefix(64, "3343:faba:3903::0")
+	ipv6 := ParseIPv6AddrPrefix(64, "3343:faba:3903::0")
 	assert.Equal(t, "3343:faba:3903::/64", ipv6.String())
-	ipv6 = NewIPv6AddrPrefix(64, "3343:faba:3903::1")
+	ipv6 = ParseIPv6AddrPrefix(64, "3343:faba:3903::1")
 	assert.Equal(t, "3343:faba:3903::/64", ipv6.String())
-	ipv6 = NewIPv6AddrPrefix(63, "3343:faba:3903:129::0")
+	ipv6 = ParseIPv6AddrPrefix(63, "3343:faba:3903:129::0")
 	assert.Equal(t, "3343:faba:3903:128::/63", ipv6.String())
 }
 
@@ -351,20 +351,20 @@ func Test_RFC5512(t *testing.T) {
 	assert.Equal(nil, err)
 	assert.Equal(buf1, buf2)
 
-	n1 := NewEncapNLRI("10.0.0.1")
+	n1 := ParseEncapNLRI("10.0.0.1")
 	buf1, err = n1.Serialize()
 	assert.Equal(nil, err)
 
-	n2 := NewEncapNLRI("")
+	n2 := NewEncapNLRI(nil)
 	err = n2.DecodeFromBytes(buf1)
 	assert.Equal(nil, err)
 	assert.Equal("10.0.0.1", n2.String())
 
-	n3 := NewEncapv6NLRI("2001::1")
+	n3 := ParseEncapv6NLRI("2001::1")
 	buf1, err = n3.Serialize()
 	assert.Equal(nil, err)
 
-	n4 := NewEncapv6NLRI("")
+	n4 := NewEncapv6NLRI(nil)
 	err = n4.DecodeFromBytes(buf1)
 	assert.Equal(nil, err)
 	assert.Equal("2001::1", n4.String())
@@ -433,8 +433,8 @@ func Test_MPLSLabelStack(t *testing.T) {
 func Test_FlowSpecNlri(t *testing.T) {
 	assert := assert.New(t)
 	cmp := make([]FlowSpecComponentInterface, 0)
-	cmp = append(cmp, NewFlowSpecDestinationPrefix(NewIPAddrPrefix(24, "10.0.0.0")))
-	cmp = append(cmp, NewFlowSpecSourcePrefix(NewIPAddrPrefix(24, "10.0.0.0")))
+	cmp = append(cmp, NewFlowSpecDestinationPrefix(ParseIPAddrPrefix(24, "10.0.0.0")))
+	cmp = append(cmp, NewFlowSpecSourcePrefix(ParseIPAddrPrefix(24, "10.0.0.0")))
 	item1 := NewFlowSpecComponentItem(DEC_NUM_OP_EQ, TCP)
 	cmp = append(cmp, NewFlowSpecComponent(FLOW_SPEC_TYPE_IP_PROTO, []*FlowSpecComponentItem{item1}))
 	item2 := NewFlowSpecComponentItem(DEC_NUM_OP_GT_EQ, 20)
@@ -517,7 +517,7 @@ func Test_FlowSpecExtended(t *testing.T) {
 	exts = append(exts, NewTrafficRateExtended(100, 9600.0))
 	exts = append(exts, NewTrafficActionExtended(true, false))
 	exts = append(exts, NewRedirectTwoOctetAsSpecificExtended(1000, 1000))
-	exts = append(exts, NewRedirectIPv4AddressSpecificExtended("10.0.0.1", 1000))
+	exts = append(exts, ParseRedirectIPv4AddressSpecificExtended("10.0.0.1", 1000))
 	exts = append(exts, NewRedirectFourOctetAsSpecificExtended(10000000, 1000))
 	exts = append(exts, NewTrafficRemarkExtended(10))
 	m1 := NewPathAttributeExtendedCommunities(exts)
@@ -536,7 +536,7 @@ func Test_FlowSpecExtended(t *testing.T) {
 
 func Test_IP6FlowSpecExtended(t *testing.T) {
 	exts := make([]ExtendedCommunityInterface, 0)
-	exts = append(exts, NewRedirectIPv6AddressSpecificExtended("2001:db8::68", 1000))
+	exts = append(exts, ParseRedirectIPv6AddressSpecificExtended("2001:db8::68", 1000))
 	m1 := NewPathAttributeIP6ExtendedCommunities(exts)
 	buf1, err := m1.Serialize()
 	require.NoError(t, err)
@@ -553,8 +553,8 @@ func Test_IP6FlowSpecExtended(t *testing.T) {
 
 func Test_FlowSpecNlriv6(t *testing.T) {
 	cmp := make([]FlowSpecComponentInterface, 0)
-	cmp = append(cmp, NewFlowSpecDestinationPrefix6(NewIPv6AddrPrefix(64, "2001::"), 12))
-	cmp = append(cmp, NewFlowSpecSourcePrefix6(NewIPv6AddrPrefix(64, "2001::"), 12))
+	cmp = append(cmp, NewFlowSpecDestinationPrefix6(ParseIPv6AddrPrefix(64, "2001::"), 12))
+	cmp = append(cmp, NewFlowSpecSourcePrefix6(ParseIPv6AddrPrefix(64, "2001::"), 12))
 	item1 := NewFlowSpecComponentItem(DEC_NUM_OP_EQ, TCP)
 	cmp = append(cmp, NewFlowSpecComponent(FLOW_SPEC_TYPE_IP_PROTO, []*FlowSpecComponentItem{item1}))
 	item2 := NewFlowSpecComponentItem(DEC_NUM_OP_GT_EQ, 20)
@@ -636,8 +636,8 @@ func Test_NotificationErrorCode(t *testing.T) {
 func Test_FlowSpecNlriVPN(t *testing.T) {
 	assert := assert.New(t)
 	cmp := make([]FlowSpecComponentInterface, 0)
-	cmp = append(cmp, NewFlowSpecDestinationPrefix(NewIPAddrPrefix(24, "10.0.0.0")))
-	cmp = append(cmp, NewFlowSpecSourcePrefix(NewIPAddrPrefix(24, "10.0.0.0")))
+	cmp = append(cmp, NewFlowSpecDestinationPrefix(ParseIPAddrPrefix(24, "10.0.0.0")))
+	cmp = append(cmp, NewFlowSpecSourcePrefix(ParseIPAddrPrefix(24, "10.0.0.0")))
 	rd, _ := ParseRouteDistinguisher("100:100")
 	n1 := NewFlowSpecIPv4VPN(rd, cmp)
 	buf1, err := n1.Serialize()
@@ -692,7 +692,7 @@ func Test_AddPath(t *testing.T) {
 	assert := assert.New(t)
 	opt := &MarshallingOption{AddPath: map[RouteFamily]BGPAddPathMode{RF_IPv4_UC: BGP_ADD_PATH_BOTH}}
 	{
-		n1 := NewIPAddrPrefix(24, "10.10.10.0")
+		n1 := ParseIPAddrPrefix(24, "10.10.10.0")
 		assert.Equal(n1.PathIdentifier(), uint32(0))
 		n1.SetPathLocalIdentifier(10)
 		assert.Equal(n1.PathLocalIdentifier(), uint32(10))
@@ -704,22 +704,22 @@ func Test_AddPath(t *testing.T) {
 		assert.Equal(n2.PathIdentifier(), uint32(10))
 	}
 	{
-		n1 := NewIPv6AddrPrefix(64, "2001::")
+		n1 := ParseIPv6AddrPrefix(64, "2001::")
 		n1.SetPathIdentifier(10)
 		bits, err := n1.Serialize(opt)
 		assert.Nil(err)
-		n2 := NewIPv6AddrPrefix(0, "")
+		n2 := NewIPv6AddrPrefix(0, nil)
 		err = n2.DecodeFromBytes(bits, opt)
 		assert.Nil(err)
 		assert.Equal(n2.PathIdentifier(), uint32(0))
 	}
 	opt = &MarshallingOption{AddPath: map[RouteFamily]BGPAddPathMode{RF_IPv4_UC: BGP_ADD_PATH_BOTH, RF_IPv6_UC: BGP_ADD_PATH_BOTH}}
 	{
-		n1 := NewIPv6AddrPrefix(64, "2001::")
+		n1 := ParseIPv6AddrPrefix(64, "2001::")
 		n1.SetPathLocalIdentifier(10)
 		bits, err := n1.Serialize(opt)
 		assert.Nil(err)
-		n2 := NewIPv6AddrPrefix(0, "")
+		n2 := NewIPv6AddrPrefix(0, nil)
 		err = n2.DecodeFromBytes(bits, opt)
 		assert.Nil(err)
 		assert.Equal(n2.PathIdentifier(), uint32(10))
@@ -728,11 +728,11 @@ func Test_AddPath(t *testing.T) {
 	{
 		rd, _ := ParseRouteDistinguisher("100:100")
 		labels := NewMPLSLabelStack(100, 200)
-		n1 := NewLabeledVPNIPAddrPrefix(24, "10.10.10.0", *labels, rd)
+		n1 := ParseLabeledVPNIPAddrPrefix(24, "10.10.10.0", *labels, rd)
 		n1.SetPathLocalIdentifier(20)
 		bits, err := n1.Serialize(opt)
 		assert.Nil(err)
-		n2 := NewLabeledVPNIPAddrPrefix(0, "", MPLSLabelStack{}, nil)
+		n2 := NewLabeledVPNIPAddrPrefix(0, nil, MPLSLabelStack{}, nil)
 		err = n2.DecodeFromBytes(bits, opt)
 		assert.Nil(err)
 		assert.Equal(n2.PathIdentifier(), uint32(20))
@@ -740,11 +740,11 @@ func Test_AddPath(t *testing.T) {
 	{
 		rd, _ := ParseRouteDistinguisher("100:100")
 		labels := NewMPLSLabelStack(100, 200)
-		n1 := NewLabeledVPNIPv6AddrPrefix(64, "2001::", *labels, rd)
+		n1 := ParseLabeledVPNIPv6AddrPrefix(64, "2001::", *labels, rd)
 		n1.SetPathLocalIdentifier(20)
 		bits, err := n1.Serialize(opt)
 		assert.Nil(err)
-		n2 := NewLabeledVPNIPv6AddrPrefix(0, "", MPLSLabelStack{}, nil)
+		n2 := NewLabeledVPNIPv6AddrPrefix(0, nil, MPLSLabelStack{}, nil)
 		err = n2.DecodeFromBytes(bits, opt)
 		assert.Nil(err)
 		assert.Equal(n2.PathIdentifier(), uint32(20))
@@ -752,22 +752,22 @@ func Test_AddPath(t *testing.T) {
 	opt = &MarshallingOption{AddPath: map[RouteFamily]BGPAddPathMode{RF_IPv4_MPLS: BGP_ADD_PATH_BOTH, RF_IPv6_MPLS: BGP_ADD_PATH_BOTH}}
 	{
 		labels := NewMPLSLabelStack(100, 200)
-		n1 := NewLabeledIPAddrPrefix(24, "10.10.10.0", *labels)
+		n1 := ParseLabeledIPAddrPrefix(24, "10.10.10.0", *labels)
 		n1.SetPathLocalIdentifier(20)
 		bits, err := n1.Serialize(opt)
 		assert.Nil(err)
-		n2 := NewLabeledIPAddrPrefix(0, "", MPLSLabelStack{})
+		n2 := NewLabeledIPAddrPrefix(0, nil, MPLSLabelStack{})
 		err = n2.DecodeFromBytes(bits, opt)
 		assert.Nil(err)
 		assert.Equal(n2.PathIdentifier(), uint32(20))
 	}
 	{
 		labels := NewMPLSLabelStack(100, 200)
-		n1 := NewLabeledIPv6AddrPrefix(64, "2001::", *labels)
+		n1 := ParseLabeledIPv6AddrPrefix(64, "2001::", *labels)
 		n1.SetPathLocalIdentifier(20)
 		bits, err := n1.Serialize(opt)
 		assert.Nil(err)
-		n2 := NewLabeledIPv6AddrPrefix(0, "", MPLSLabelStack{})
+		n2 := NewLabeledIPv6AddrPrefix(0, nil, MPLSLabelStack{})
 		err = n2.DecodeFromBytes(bits, opt)
 		assert.Nil(err)
 		assert.Equal(n2.PathIdentifier(), uint32(20))
@@ -799,18 +799,18 @@ func Test_AddPath(t *testing.T) {
 	}
 	opt = &MarshallingOption{AddPath: map[RouteFamily]BGPAddPathMode{RF_IPv4_ENCAP: BGP_ADD_PATH_BOTH}}
 	{
-		n1 := NewEncapNLRI("10.10.10.0")
+		n1 := ParseEncapNLRI("10.10.10.0")
 		n1.SetPathLocalIdentifier(50)
 		bits, err := n1.Serialize(opt)
 		assert.Nil(err)
-		n2 := NewEncapNLRI("")
+		n2 := NewEncapNLRI(nil)
 		err = n2.DecodeFromBytes(bits, opt)
 		assert.Nil(err)
 		assert.Equal(n2.PathIdentifier(), uint32(50))
 	}
 	opt = &MarshallingOption{AddPath: map[RouteFamily]BGPAddPathMode{RF_FS_IPv4_UC: BGP_ADD_PATH_BOTH}}
 	{
-		n1 := NewFlowSpecIPv4Unicast([]FlowSpecComponentInterface{NewFlowSpecDestinationPrefix(NewIPAddrPrefix(24, "10.0.0.0"))})
+		n1 := NewFlowSpecIPv4Unicast([]FlowSpecComponentInterface{NewFlowSpecDestinationPrefix(ParseIPAddrPrefix(24, "10.0.0.0"))})
 		n1.SetPathLocalIdentifier(60)
 		bits, err := n1.Serialize(opt)
 		assert.Nil(err)
@@ -858,7 +858,7 @@ func Test_CompareFlowSpecNLRI(t *testing.T) {
 
 func Test_MpReachNLRIWithIPv4MappedIPv6Prefix(t *testing.T) {
 	assert := assert.New(t)
-	n1 := NewIPv6AddrPrefix(120, "::ffff:10.0.0.0")
+	n1 := ParseIPv6AddrPrefix(120, "::ffff:10.0.0.0")
 	buf1, err := n1.Serialize()
 	assert.Nil(err)
 	n2, err := NewPrefixFromRouteFamily(RouteFamilyToAfiSafi(RF_IPv6_UC))
@@ -870,7 +870,7 @@ func Test_MpReachNLRIWithIPv4MappedIPv6Prefix(t *testing.T) {
 
 	label := NewMPLSLabelStack(2)
 
-	n3 := NewLabeledIPv6AddrPrefix(120, "::ffff:10.0.0.0", *label)
+	n3 := ParseLabeledIPv6AddrPrefix(120, "::ffff:10.0.0.0", *label)
 	buf1, err = n3.Serialize()
 	assert.Nil(err)
 	n4, err := NewPrefixFromRouteFamily(RouteFamilyToAfiSafi(RF_IPv6_MPLS))
@@ -908,7 +908,7 @@ func Test_MpReachNLRIWithIPv6PrefixWithIPv4Peering(t *testing.T) {
 	assert.Equal(net.ParseIP("::ffff:172.20.0.1"), p.Nexthop)
 	assert.Equal(net.ParseIP(""), p.LinkLocalNexthop)
 	value := []AddrPrefixInterface{
-		NewIPv6AddrPrefix(64, "2001:db8:1:1::"),
+		ParseIPv6AddrPrefix(64, "2001:db8:1:1::"),
 	}
 	assert.Equal(value, p.Value)
 	// Set NextHop as IPv4 address (because IPv4 peering)
@@ -946,7 +946,7 @@ func Test_MpReachNLRIWithIPv6(t *testing.T) {
 	assert.Equal(uint8(SAFI_UNICAST), p.SAFI)
 	assert.Equal(net.ParseIP("2001:db8:1::1"), p.Nexthop)
 	value := []AddrPrefixInterface{
-		NewIPv6AddrPrefix(64, "2001:db8:53::"),
+		ParseIPv6AddrPrefix(64, "2001:db8:53::"),
 	}
 	assert.Equal(value, p.Value)
 }
@@ -971,7 +971,7 @@ func Test_MpUnreachNLRIWithIPv6(t *testing.T) {
 	assert.Equal(uint16(AFI_IP6), p.AFI)
 	assert.Equal(uint8(SAFI_UNICAST), p.SAFI)
 	value := []AddrPrefixInterface{
-		NewIPv6AddrPrefix(64, "2001:db8:53::"),
+		ParseIPv6AddrPrefix(64, "2001:db8:53::"),
 	}
 	assert.Equal(value, p.Value)
 }
@@ -1006,7 +1006,7 @@ func Test_MpReachNLRIWithIPv6PrefixWithLinkLocalNexthop(t *testing.T) {
 	assert.Equal(net.ParseIP("2001:db8:1::1"), p.Nexthop)
 	assert.Equal(net.ParseIP("fe80::1"), p.LinkLocalNexthop)
 	value := []AddrPrefixInterface{
-		NewIPv6AddrPrefix(48, "2010:ab8:1::"),
+		ParseIPv6AddrPrefix(48, "2010:ab8:1::"),
 	}
 	assert.Equal(value, p.Value)
 	// Test Serialize()
@@ -1043,7 +1043,7 @@ func Test_MpReachNLRIWithVPNv4Prefix(t *testing.T) {
 	assert.Equal(net.ParseIP("172.20.0.1").To4(), p.Nexthop)
 	assert.Equal(net.ParseIP(""), p.LinkLocalNexthop)
 	value := []AddrPrefixInterface{
-		NewLabeledVPNIPAddrPrefix(24, "10.1.1.0", *NewMPLSLabelStack(16),
+		ParseLabeledVPNIPAddrPrefix(24, "10.1.1.0", *NewMPLSLabelStack(16),
 			NewRouteDistinguisherTwoOctetAS(65000, 100)),
 	}
 	assert.Equal(value, p.Value)
@@ -1087,7 +1087,7 @@ func Test_MpReachNLRIWithVPNv6Prefix(t *testing.T) {
 	assert.Equal(net.ParseIP("2001:db8:1::1"), p.Nexthop)
 	assert.Equal(net.ParseIP(""), p.LinkLocalNexthop)
 	value := []AddrPrefixInterface{
-		NewLabeledVPNIPv6AddrPrefix(124, "2001:1::", *NewMPLSLabelStack(16),
+		ParseLabeledVPNIPv6AddrPrefix(124, "2001:1::", *NewMPLSLabelStack(16),
 			NewRouteDistinguisherTwoOctetAS(65000, 100)),
 	}
 	assert.Equal(value, p.Value)
@@ -1122,7 +1122,7 @@ func Test_MpReachNLRIWithIPv4PrefixWithIPv6Nexthop(t *testing.T) {
 	assert.Equal(uint8(SAFI_UNICAST), p.SAFI)
 	assert.Equal(net.ParseIP("2001:db8:1::1"), p.Nexthop)
 	value := []AddrPrefixInterface{
-		NewIPAddrPrefix(24, "192.168.10.0"),
+		ParseIPAddrPrefix(24, "192.168.10.0"),
 	}
 	assert.Equal(value, p.Value)
 	// Test Serialize()
@@ -1142,7 +1142,7 @@ func Test_MpReachNLRIWithImplicitPrefix(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x01,
 	}
-	prefix := NewIPAddrPrefix(24, "192.168.10.0")
+	prefix := ParseIPAddrPrefix(24, "192.168.10.0")
 	// Test DecodeFromBytes()
 	p := &PathAttributeMpReachNLRI{}
 	option := &MarshallingOption{ImplicitPrefix: prefix}
@@ -1214,7 +1214,7 @@ func TestParseVPNPrefix(t *testing.T) {
 			name:     "test valid RD type 1 VPNv4 prefix",
 			prefix:   "1.1.1.1:100:10.0.0.1/32",
 			valid:    true,
-			rd:       NewRouteDistinguisherIPAddressAS("1.1.1.1", uint16(100)),
+			rd:       ParseRouteDistinguisherIPAddressAS("1.1.1.1", uint16(100)),
 			ipPrefix: "10.0.0.1/32",
 		},
 		{
@@ -1242,7 +1242,7 @@ func TestParseVPNPrefix(t *testing.T) {
 			name:     "test valid RD type 1 VPNv6 prefix",
 			prefix:   "1.1.1.1:100:100:1::/64",
 			valid:    true,
-			rd:       NewRouteDistinguisherIPAddressAS("1.1.1.1", uint16(100)),
+			rd:       ParseRouteDistinguisherIPAddressAS("1.1.1.1", uint16(100)),
 			ipPrefix: "100:1::/64",
 		},
 		{
@@ -1537,7 +1537,7 @@ func TestNormalizeFlowSpecOpValues(t *testing.T) {
 
 func Test_PathAttributeNextHop(t *testing.T) {
 	f := func(addr string) {
-		b, _ := NewPathAttributeNextHop(addr).Serialize()
+		b, _ := ParsePathAttributeNextHop(addr).Serialize()
 		p := PathAttributeNextHop{}
 		p.DecodeFromBytes(b)
 		assert.Equal(t, addr, p.Value.String())
