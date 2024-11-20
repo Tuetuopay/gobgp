@@ -440,30 +440,28 @@ func (t *Table) setDestination(dst *Destination) {
 }
 
 func (t *Table) tableKey(nlri bgp.AddrPrefixInterface) string {
+	var b []byte = nil
 	switch T := nlri.(type) {
 	case *bgp.IPAddrPrefix:
-		b := make([]byte, 5)
+		b = make([]byte, 5)
 		copy(b, T.Prefix.To4())
 		b[4] = T.Length
-		return *(*string)(unsafe.Pointer(&b))
 	case *bgp.IPv6AddrPrefix:
-		b := make([]byte, 17)
+		b = make([]byte, 17)
 		copy(b, T.Prefix.To16())
 		b[16] = T.Length
-		return *(*string)(unsafe.Pointer(&b))
 	case *bgp.LabeledVPNIPAddrPrefix:
-		b := make([]byte, 13)
-		serializedRD, _ := T.RD.Serialize()
-		copy(b, serializedRD)
+		b = make([]byte, 13)
+		T.RD.SerializeTo(b)
 		copy(b[8:12], T.Prefix.To4())
 		b[12] = T.Length
-		return *(*string)(unsafe.Pointer(&b))
 	case *bgp.LabeledVPNIPv6AddrPrefix:
-		b := make([]byte, 25)
-		serializedRD, _ := T.RD.Serialize()
-		copy(b, serializedRD)
+		b = make([]byte, 25)
+		T.RD.SerializeTo(b)
 		copy(b[8:24], T.Prefix.To16())
 		b[24] = T.Length
+	}
+	if b != nil {
 		return *(*string)(unsafe.Pointer(&b))
 	}
 	return nlri.String()
