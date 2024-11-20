@@ -16,6 +16,7 @@
 package table
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math/bits"
 	"net"
@@ -460,6 +461,46 @@ func (t *Table) tableKey(nlri bgp.AddrPrefixInterface) string {
 		T.RD.SerializeTo(b)
 		copy(b[8:24], T.Prefix.To16())
 		b[24] = T.Length
+	case *bgp.EVPNNLRI:
+		switch U := T.RouteTypeData.(type) {
+		case *bgp.EVPNEthernetAutoDiscoveryRoute:
+			b = make([]byte, 1+8+10+4)
+			b[0] = bgp.EVPN_ROUTE_TYPE_ETHERNET_AUTO_DISCOVERY
+			U.RD.SerializeTo(b[1:9])
+			copy(b[9:19], U.ESI.Value)
+			binary.BigEndian.PutUint32(b[19:23], U.ETag)
+		case *bgp.EVPNMacIPAdvertisementRoute:
+			b = make([]byte, 1+8+4+1+U.MacAddressLength+1+U.IPAddressLength)
+			b[0] = bgp.EVPN_ROUTE_TYPE_MAC_IP_ADVERTISEMENT
+			U.RD.SerializeTo(b[1:9])
+			binary.BigEndian.PutUint32(b[9:13], U.ETag)
+			b[13] = U.MacAddressLength
+			copy(b[14:], U.MacAddress)
+			b[14+U.MacAddressLength] = U.IPAddressLength
+			copy(b[15+U.MacAddressLength:], U.IPAddress)
+		case *bgp.EVPNMulticastEthernetTagRoute:
+			b = make([]byte, 1+8+4+1+U.IPAddressLength)
+			b[0] = bgp.EVPN_INCLUSIVE_MULTICAST_ETHERNET_TAG
+			U.RD.SerializeTo(b[1:9])
+			binary.BigEndian.PutUint32(b[9:13], U.ETag)
+			b[13] = U.IPAddressLength
+			copy(b[14:], U.IPAddress)
+		case *bgp.EVPNEthernetSegmentRoute:
+			b = make([]byte, 1+8+10+1+U.IPAddressLength)
+			b[0] = bgp.EVPN_ETHERNET_SEGMENT_ROUTE
+			U.RD.SerializeTo(b[1:9])
+			copy(b[9:19], U.ESI.Value)
+			b[19] = U.IPAddressLength
+			copy(b[20:], U.IPAddress)
+		case *bgp.EVPNIPPrefixRoute:
+			b = make([]byte, 1+8+4+1+1+len(U.IPPrefix))
+			b[0] = bgp.EVPN_IP_PREFIX
+			U.RD.SerializeTo(b[1:9])
+			binary.BigEndian.PutUint32(b[9:13], U.ETag)
+			b[13] = U.IPPrefixLength
+			b[14] = uint8(len(U.IPPrefix))
+			copy(b[15:], U.IPPrefix)
+		}
 	}
 	if b != nil {
 		return *(*string)(unsafe.Pointer(&b))
